@@ -1,9 +1,10 @@
 // Copyright (C) 2022 bearkim forked by rertina
 
-use std::{str::FromStr, thread::Thread};
 use std::sync::Mutex;
 use std::collections::HashMap;
-use std::{thread, time};
+use std::{thread, time, env, io};
+use std::path::PathBuf;
+use mongodb::{bson::doc, options::IndexOptions, Client, Collection, IndexModel};
 
 use actix_web::{get, middleware, rt, web, App, HttpRequest, HttpServer, HttpResponse, Responder, cookie::time::Duration};
 use lazy_static::lazy_static;
@@ -11,7 +12,7 @@ use lazy_static::lazy_static;
 mod metadata;
 use metadata::{Metadata, MetadataManager};
 
-
+extern crate dotenv;
 // #[tokio::main(flavor = "multi_thread", worker_threads = 1000)]
 // async fn main() {    
     
@@ -66,14 +67,36 @@ async fn add_metadata_connect() -> impl Responder {
     HttpResponse::Ok().body("added Meatadata Connection")
 }
 
-#[tokio::main]
-async fn main()  -> std::io::Result<()> {    
-    
+fn get_env_path() -> io::Result<PathBuf> {
+    let mut dir = env::current_exe()?;
+    dir.pop();    
+    dir.push(".env");
+    Ok(dir)
+}
 
-    HttpServer::new(|| {
-        App::new().service(index).service(add_metadata_connect)
+
+#[tokio::main]
+async fn main()  -> std::io::Result<()> { 
+    let path = get_env_path().expect("Couldn't");    
+    println!("{}", path.display());
+    dotenv::from_filename(path).expect("Failed to open directory");
+
+    println!("MONGO_URI: {}", env::var("MONGO_URI").expect("MONGO_URI not found"));
+    println!("SERVER_ADDR: {}", env::var("SERVER_ADDR").expect("SERVER_ADDR not found"));             
+    println!("SERVER_PORT: {}", env::var("SERVER_PORT").expect("SERVER_PORT not found"));             
+    let mongo_uri = std::env::var("MONGO_URI").unwrap();
+    let server_ip = String::from(env::var("SERVER_ADDR").unwrap());
+    let port : u16 = env::var("SERVER_PORT").expect("is not valid").parse().unwrap();
+
+    let client = Client::with_uri_str(mongo_uri).await.expect("failed to connect");
+
+    HttpServer::new(move || {
+        App::new()
+        .app_data(web::Data::new(client.clone()))
+        .service(index)
+        .service(add_metadata_connect)
     })
-    .bind(("127.0.0.1", 8080))?
+    .bind((server_ip, port))?
     .run()
     .await
 }
