@@ -50,6 +50,9 @@ async fn add_metadata_connect() -> impl Responder {
             url: String::from("rtsp://118.36.97.121/profile1/media.smp"),
             username: String::from("admin"), 
             password: String::from("!qaz2wsx"),
+            // url: String::from("rtsp://192.168.0.7/profile1/media.smp"),
+            // username: String::from("admin"), 
+            // password: String::from("r00tr00tr00t"),
             fclt_name: String::from("test"),
         };
         loop {

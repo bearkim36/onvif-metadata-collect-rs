@@ -1,5 +1,5 @@
 [workspace]
-members = [".", "examples/client", "examples/webrtc-proxy"]
+members = [".", "examples/client"]
 default-members = ["."]
 
 [package]

@@ -97,43 +97,6 @@
       },
       "args": [],
       "cwd": "${workspaceFolder}"
-    },
-    {
-      "type": "lldb",
-      "request": "launch",
-      "name": "Debug executable 'webrtc-proxy'",
-      "cargo": {
-        "args": [
-          "build",
-          "--bin=webrtc-proxy",
-          "--package=webrtc-proxy"
-        ],
-        "filter": {
-          "name": "webrtc-proxy",
-          "kind": "bin"
-        }
-      },
-      "args": [],
-      "cwd": "${workspaceFolder}"
-    },
-    {
-      "type": "lldb",
-      "request": "launch",
-      "name": "Debug unit tests in executable 'webrtc-proxy'",
-      "cargo": {
-        "args": [
-          "test",
-          "--no-run",
-          "--bin=webrtc-proxy",
-          "--package=webrtc-proxy"
-        ],
-        "filter": {
-          "name": "webrtc-proxy",
-          "kind": "bin"
-        }
-      },
-      "args": [],
-      "cwd": "${workspaceFolder}"
-    }
+    }   
   ]
 }

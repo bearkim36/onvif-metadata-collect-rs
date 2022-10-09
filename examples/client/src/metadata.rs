@@ -66,11 +66,11 @@ impl MetadataManager for Metadata {
                 match item.ok_or_else(|| anyhow!("EOF"))?? {
                     CodecItem::MessageFrame(m) => {
 
-                      //  println!(
-                      //       "{}: {}\n",
-                      //       &m.timestamp(),
-                      //       std::str::from_utf8(m.data()).unwrap(),
-                      //   );
+                    //    println!(
+                    //         "{}: {}\n",
+                    //         &m.timestamp(),
+                    //         std::str::from_utf8(m.data()).unwrap(),
+                    //     );
                         
                     },
                     _ => continue,
