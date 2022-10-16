@@ -12,6 +12,9 @@ use lazy_static::lazy_static;
 mod metadata;
 use metadata::{Metadata, MetadataManager};
 
+mod dkcalculation;
+use dkcalculation::{ DKCalculation};
+
 extern crate dotenv;
 // #[tokio::main(flavor = "multi_thread", worker_threads = 1000)]
 // async fn main() {    
@@ -89,6 +92,9 @@ async fn main()  -> std::io::Result<()> {
     let port : u16 = env::var("SERVER_PORT").expect("is not valid").parse().unwrap();
 
     let client = Client::with_uri_str(mongo_uri).await.expect("failed to connect");
+
+    let dkcalc = DKCalculation{..Default::default()};
+    let calc = dkcalc.get_values();
 
     HttpServer::new(move || {
         App::new()
