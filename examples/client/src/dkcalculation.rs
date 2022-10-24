@@ -1,5 +1,10 @@
 use std::f64::consts::PI;
 
+pub struct DKPoint{
+  pub x:f64,
+  pub y:f64,
+}
+
 // #[derive(Default)]
 pub struct DKCalculation {  
   pub sensor_width: f64,  
@@ -8,12 +13,6 @@ pub struct DKCalculation {
   pub distance: f64,
   pub now_pan: f64,
   pub now_tilt: f64,
-}
-
-impl DKCalculation  {  
-  pub fn get_values(&self) -> f64 {
-    self.sensor_width
-  }
 }
 
 impl Default for DKCalculation {
@@ -34,3 +33,14 @@ impl Default for DKCalculation {
   }
 }
  
+impl DKCalculation  {    
+  // 속도 구하기
+  pub fn distance_speed(distance:f64, time:f64) -> f64 {
+    (distance/(time/1000.0)*3600.0)/1000.0
+  }
+
+  // 거리 구하기
+  pub fn point_to_point_distance(p1:DKPoint, p2:DKPoint) -> f64 {
+    ((p2.x - p1.x).powf(2.0)+(p2.y - p1.y).powf(2.0)).sqrt()
+  }
+}

@@ -94,7 +94,6 @@ async fn main()  -> std::io::Result<()> {
     let client = Client::with_uri_str(mongo_uri).await.expect("failed to connect");
 
     let dkcalc = DKCalculation{..Default::default()};
-    let calc = dkcalc.get_values();
 
     HttpServer::new(move || {
         App::new()
