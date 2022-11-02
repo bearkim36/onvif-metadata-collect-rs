@@ -1,3 +1,6 @@
+extern crate chrono;
+
+
 use std::sync::Arc;
 use futures::StreamExt;
 use url::{Url};
@@ -8,7 +11,8 @@ use retina::client::{SessionGroup, SetupOptions};
 use async_trait::async_trait;
 use uuid::Uuid;
 
-
+use quickxml_to_serde::{xml_string_to_json, Config,NullValue};
+use chrono::*;
 #[async_trait]
 pub trait MetadataManager {
   async fn run_onvif(&self) -> Result<(), Error> ;
@@ -20,6 +24,7 @@ pub struct Metadata {
   pub password: String,
   pub fclt_name: String,
 }
+
 
 
 #[async_trait]
@@ -64,14 +69,31 @@ impl MetadataManager for Metadata {
         tokio::select! {
             item = session.next() => {
                 match item.ok_or_else(|| anyhow!("EOF"))?? {
-                    CodecItem::MessageFrame(m) => {
+                    CodecItem::MessageFrame(m) => {     
+                        //println!("{}", std::str::from_utf8(m.data()).unwrap());
+                        let conf = Config::new_with_custom_values(true, "", "txt", NullValue::Null);
+                        let json = xml_string_to_json(std::str::from_utf8(m.data()).unwrap().to_string(), &conf).unwrap();
+                        let meta = json["MetadataStream"]["VideoAnalytics"].clone();
+                        let date_str:String = meta["Frame"]["UtcTime"].to_string().replace("\"", "");                        
+                                                                                 
+                        if date_str != "null" {
+                            let date = NaiveDateTime::parse_from_str(&date_str, "%Y-%m-%dT%H:%M:%S%.3fZ").unwrap();                            
+                            for objects in meta["Frame"]["Object"].as_array().into_iter() {
+                                for obj in objects.iter() {
+                                    let object_id = obj["ObjectId"].clone();
+                                    
 
-                    //    println!(
-                    //         "{}: {}\n",
+                                }                                 
+                            }
+                        }                        
+                        
+                        // println!("{}", json.unwrap());
+
+                        
+                    //    println!"%Y-%m-%dT%H:%M:%S"                    //         "{}: {}\n",
                     //         &m.timestamp(),
                     //         std::str::from_utf8(m.data()).unwrap(),
-                    //     );
-                        
+                    //     );                        
                     },
                     _ => continue,
                 };

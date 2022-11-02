@@ -1,5 +1,6 @@
 // Copyright (C) 2022 bearkim forked by rertina
 
+
 use std::sync::Mutex;
 use std::collections::HashMap;
 use std::{thread, time, env, io};
@@ -13,7 +14,7 @@ mod metadata;
 use metadata::{Metadata, MetadataManager};
 
 mod dkcalculation;
-use dkcalculation::{ DKCalculation};
+use dkcalculation::{ DKCalculation, DKFcltInstallInfo};
 
 extern crate dotenv;
 // #[tokio::main(flavor = "multi_thread", worker_threads = 1000)]
@@ -85,15 +86,26 @@ async fn main()  -> std::io::Result<()> {
     dotenv::from_filename(path).expect("Failed to open directory");
 
     println!("MONGO_URI: {}", env::var("MONGO_URI").expect("MONGO_URI not found"));
-    println!("SERVER_ADDR: {}", env::var("SERVER_ADDR").expect("SERVER_ADDR not found"));             
-    println!("SERVER_PORT: {}", env::var("SERVER_PORT").expect("SERVER_PORT not found"));             
-    let mongo_uri = std::env::var("MONGO_URI").unwrap();
-    let server_ip = String::from(env::var("SERVER_ADDR").unwrap());
-    let port : u16 = env::var("SERVER_PORT").expect("is not valid").parse().unwrap();
+    println!("SERVER_ADDR: {}", env::var("SERVER_ADDR").unwrap_or("0.0.0.0".to_string()));
+    println!("SERVER_PORT: {}", env::var("SERVER_PORT").unwrap_or("8000".to_string()));
+    let mongo_uri = env::var("MONGO_URI").unwrap();
+    let server_ip = String::from(env::var("SERVER_ADDR").unwrap_or("0.0.0.0".to_string()));
+    let port : u16 = env::var("SERVER_PORT").unwrap_or("8000".to_string()).parse().unwrap();
 
     let client = Client::with_uri_str(mongo_uri).await.expect("failed to connect");
+    
+    let dk_fclt_install_info = DKFcltInstallInfo{
+        view_angle_w : env::var("VIEW_ANGLE_W").unwrap_or("36.0".to_string()).parse::<f64>().unwrap(),
+        lens_distance: env::var("LENS_DISTANCE").unwrap_or("5.0".to_string()).parse::<f64>().unwrap(),
+        camera_screen_width: env::var("CAMERA_SCREEN_WIDTH").unwrap_or("4.0".to_string()).parse::<f64>().unwrap(),
+        installation_height: env::var("INSTALLATION_HEIGHT").unwrap_or("6.0".to_string()).parse::<f64>().unwrap(),
+    };
 
-    let dkcalc = DKCalculation{..Default::default()};
+    //let dkcalc = DKCalculation::new(dk_fclt_install_info);
+    
+
+    
+
 
     HttpServer::new(move || {
         App::new()
