@@ -1,14 +1,12 @@
 // Copyright (C) 2022 bearkim forked by rertina
 
 
-use std::sync::Mutex;
-use std::collections::HashMap;
+
 use std::{thread, time, env, io};
 use std::path::PathBuf;
 use mongodb::{bson::doc, options::IndexOptions, Client, Collection, IndexModel};
 
 use actix_web::{get, middleware, rt, web, App, HttpRequest, HttpServer, HttpResponse, Responder, cookie::time::Duration};
-use lazy_static::lazy_static;
 
 mod metadata;
 use metadata::{Metadata, MetadataManager};
@@ -31,15 +29,7 @@ extern crate dotenv;
 //         thread::sleep(time::Duration::from_millis(10));
 //     }
 // }
-lazy_static! {
-    static ref HASHMAP: Mutex<HashMap<u32, &'static str>> = {
-        let mut m = HashMap::new();
-        m.insert(0, "foo");
-        m.insert(1, "bar");
-        m.insert(2, "baz");
-        Mutex::new(m)
-    };        
-}
+
 
 #[get("/")]
 async fn index(req: HttpRequest) -> &'static str {

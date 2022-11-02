@@ -453,6 +453,7 @@ dependencies = [
  "mylog",
  "quickxml_to_serde",
  "retina",
+ "serde_json",
  "structopt",
  "tokio",
  "url",

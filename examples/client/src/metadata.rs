@@ -1,6 +1,7 @@
 extern crate chrono;
 
-
+use std::sync::Mutex;
+use std::collections::HashMap;
 use std::sync::Arc;
 use futures::StreamExt;
 use url::{Url};
@@ -10,9 +11,12 @@ use retina::codec::CodecItem;
 use retina::client::{SessionGroup, SetupOptions};
 use async_trait::async_trait;
 use uuid::Uuid;
+use lazy_static::lazy_static; 
+use serde_json::Value;
 
 use quickxml_to_serde::{xml_string_to_json, Config,NullValue};
 use chrono::*;
+
 #[async_trait]
 pub trait MetadataManager {
   async fn run_onvif(&self) -> Result<(), Error> ;
@@ -25,7 +29,23 @@ pub struct Metadata {
   pub fclt_name: String,
 }
 
+pub struct MetadataObject {
+    pub object_id: String,
+    pub class: String,
+    pub object_array: Value,
+    pub last_time: NaiveDateTime,
+    pub cross_line: Vec<String>,
+}
 
+lazy_static! {
+    static ref HASHMAP: Mutex<HashMap<u32, &'static str>> = {
+        let mut m = HashMap::new();
+        m.insert(0, "foo");
+        m.insert(1, "bar");
+        m.insert(2, "baz");
+        Mutex::new(m)
+    };        
+}
 
 #[async_trait]
 impl MetadataManager for Metadata {  
@@ -82,7 +102,7 @@ impl MetadataManager for Metadata {
                                 for obj in objects.iter() {
                                     let object_id = obj["ObjectId"].clone();
                                     
-
+                                    
                                 }                                 
                             }
                         }                        

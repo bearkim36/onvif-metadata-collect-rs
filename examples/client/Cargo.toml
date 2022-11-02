@@ -23,6 +23,7 @@ async-trait = "0.1.57"
 dotenv = "0.15.0"
 quickxml_to_serde = "0.5.0"
 chrono = "0.4.22"
+serde_json = "1.0.87"
 
 [dependencies.mongodb]
 version = "2.3.1"
