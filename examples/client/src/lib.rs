@@ -1,42 +1,34 @@
 
-use std::{thread, time, env, io};
+use std::{thread, time, env, io, string};
 use std::path::PathBuf;
 use std::sync::Mutex;
 use std::collections::HashMap;
 use std::sync::Arc;
 use futures::StreamExt;
 use url::{Url};
-use anyhow::{anyhow, Error};
+use anyhow::{anyhow};
 
 use retina::codec::CodecItem;
 use retina::client::{SessionGroup, SetupOptions};
-use async_trait::async_trait;
-use uuid::Uuid;
-use lazy_static::lazy_static; 
-use serde_json::{Value,json,Number};
-
-use quickxml_to_serde::{xml_string_to_json, Config,NullValue};
-use chrono::*;
-mod metadata;
-use metadata::{Metadata, MetadataManager};
 
 use neon::prelude::*;
 
+use tokio::runtime::Runtime;
+use std::sync::mpsc;
+
+
 extern crate dotenv;
 
-#[neon::main]
-fn main(mut cx: ModuleContext<'_>) -> NeonResult<()> {
-  cx.export_function("add_metadata_connect", add_metadata_connect)?;
-    Ok(())
-}
+ fn add_metadata_connect(mut cx: FunctionContext)  -> JsResult<JsUndefined> {  
+  // let n = cx.argument::<JsNumber>(0)?.value(&mut cx);
+  // let callback = cx.argument::<JsFunction>(0).unwrap().root(&mut cx);
+  // let channel = Arc::new(cx.channel());
+  let (tx, rx) = std::sync::mpsc::channel();
 
- fn add_metadata_connect(mut cx: FunctionContext<'_>) -> JsResult<JsUndefined> {
-  let filename = cx.argument::<JsString>(0)?.value(&mut cx);
-  let callback = cx.argument::<JsFunction>(1)?.root(&mut cx);
-  let channel = cx.channel();
 
-  tokio::spawn(async move {                
-
+  let mut rt = Runtime::new().unwrap();  
+  let local = tokio::task::LocalSet::new();
+  rt.spawn( async move {                          
       let session_group = Arc::new(SessionGroup::default());
       let creds = Some(retina::client::Credentials {
           username : String::from("admin"),
@@ -67,31 +59,40 @@ fn main(mut cx: ModuleContext<'_>) -> NeonResult<()> {
         .play(retina::client::PlayOptions::default().ignore_zero_seq(true))
         .await.unwrap()
         .demuxed().unwrap();
-        loop {
+ 
+        loop {          
           tokio::select! {
               item = session.next() => {
                   match item.ok_or_else(|| anyhow!("EOF")).unwrap() {
-                      Ok(CodecItem::MessageFrame(m)) => {
-                                                        
-                        println!("{:?}", m);
-                       
-   
+                      Ok(CodecItem::MessageFrame(m)) => {   
+                        let msg = String::from(std::str::from_utf8(m.data()).unwrap());                        
+                        tx.send( msg).unwrap();
+
+                        
                       },
                       _ => continue,
                   };
               },
           }
-      }
-      // loop {
-      //     println!("start onvif session");
-      //     if let Err(_err) = metadata.run_onvif().await {
-      //         println!("retry 5sec after");
-      //         thread::sleep(time::Duration::from_secs(5));
-      //     }
-      // } 
-
-  });         
-
+      }               
+  });       
+  loop {
+      // Run the local task set.
+    local.block_on(&rt, async {
+        let callback = cx.argument::<JsFunction>(0).unwrap().root(&mut cx);
+        let channel = Arc::new(cx.channel());  
+      
+        let message = rx.recv().unwrap();
+        channel.send( move |mut cx| {
+          callback
+          .into_inner(&mut cx)
+          .call_with(&cx)
+          .arg(cx.string(message))
+          .exec(&mut cx)
+        });  
+      
+    });
+  }
   Ok(cx.undefined())
 }
 
@@ -101,4 +102,11 @@ fn get_env_path() -> io::Result<PathBuf> {
   dir.pop();    
   dir.push(".env");
   Ok(dir)
+}
+
+#[neon::main]
+fn main(mut cx: ModuleContext) -> NeonResult<()> {
+  cx.export_function("add_metadata_connect", add_metadata_connect)?;
+
+  Ok(()) 
 }
