@@ -10,7 +10,7 @@ use anyhow::{anyhow, Error};
 use retina::codec::CodecItem;
 use retina::client::{SessionGroup, SetupOptions};
 use async_trait::async_trait;
-use hyper::{Body, Method, Request, Uri};
+use tokio::task;
 
 use quickxml_to_serde::{xml_string_to_json, Config,NullValue};
 
@@ -77,14 +77,16 @@ impl MetadataManager for Metadata {
                         let json = xml_string_to_json(std::str::from_utf8(m.data()).unwrap().to_string(), &conf).unwrap();
                         let param = json.to_string();
                         let analysis_url = env::var("ANALYSIS_SERVER_URL").unwrap();
-
-                        let _sub_thread = tokio::spawn( async move  {   
-                            let req = Request::builder()
-                                .method(Method::POST)
-                                .uri(analysis_url)
+                        let sub_thread = task::spawn( async  {   
+                            let client = reqwest::Client::new();
+                            let res = client.post(analysis_url)
                                 .header("content-type", "application/json")
-                                .body(Body::from(param)).unwrap();
-                            println!("{:?}", req);
+                                .body(param)
+                                .send()
+                                .await.unwrap_or_else(|error| {
+                                    panic!("occured network: {:?}", error);
+                                });
+
                         });
                     },
                     _ => continue,
