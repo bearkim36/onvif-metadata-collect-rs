@@ -26,16 +26,16 @@
     {
       "type": "lldb",
       "request": "launch",
-      "name": "Debug benchmark 'client'",
+      "name": "Debug benchmark 'onvif-metadata-rs'",
       "cargo": {
         "args": [
           "test",
           "--no-run",
-          "--bench=client",
+          "--bench=onvif-metadata-rs",
           "--package=retina"
         ],
         "filter": {
-          "name": "client",
+          "name": "onvif-metadata-rs",
           "kind": "bench"
         }
       },
@@ -64,15 +64,15 @@
     {
       "type": "lldb",
       "request": "launch",
-      "name": "Debug executable 'client'",
+      "name": "Debug executable 'onvif-metadata-rs'",
       "cargo": {
         "args": [
           "build",
-          "--bin=client",
-          "--package=client"
+          "--bin=onvif-metadata-rs",
+          "--package=onvif-metadata-rs"
         ],
         "filter": {
-          "name": "client",
+          "name": "onvif-metadata-rs",
           "kind": "bin"
         }
       },
@@ -82,16 +82,16 @@
     {
       "type": "lldb",
       "request": "launch",
-      "name": "Debug unit tests in executable 'client'",
+      "name": "Debug unit tests in executable 'onvif-metadata-rs'",
       "cargo": {
         "args": [
           "test",
           "--no-run",
-          "--bin=client",
-          "--package=client"
+          "--bin=onvif-metadata-rs",
+          "--package=onvif-metadata-rs"
         ],
         "filter": {
-          "name": "client",
+          "name": "onvif-metadata-rs",
           "kind": "bin"
         }
       },
@@ -101,16 +101,16 @@
     {
       "type": "lldb",
       "request": "launch",
-      "name": "Debug unit tests in library 'client'",
+      "name": "Debug unit tests in library 'onvif-metadata-rs'",
       "cargo": {
         "args": [
           "test",
           "--no-run",
           "--lib",
-          "--package=client"
+          "--package=onvif-metadata-rs"
         ],
         "filter": {
-          "name": "client",
+          "name": "onvif-metadata-rs",
           "kind": "lib"
         }
       },

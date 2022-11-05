@@ -1,5 +1,5 @@
 [workspace]
-members = [".", "examples/client"]
+members = [".", "examples/onvif-metadata-rs"]
 default-members = ["."]
 
 [package]
