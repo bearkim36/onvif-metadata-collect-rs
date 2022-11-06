@@ -12,7 +12,7 @@ use retina::client::{SessionGroup, SetupOptions};
 use async_trait::async_trait;
 use uuid::Uuid;
 use lazy_static::lazy_static; 
-use serde_json::{Value,json,Number};
+use serde_json::{Value,json};
 
 use quickxml_to_serde::{xml_string_to_json, Config,NullValue};
 use chrono::*;
@@ -88,8 +88,6 @@ impl MetadataManager for Metadata {
             item = session.next() => {
                 match item.ok_or_else(|| anyhow!("EOF"))?? {
                     CodecItem::MessageFrame(m) => {
-                        let current_time = Utc::now().timestamp_millis();
-
                         //println!("{}", std::str::from_utf8(m.data()).unwrap());
                         let conf = Config::new_with_custom_values(true, "", "txt", NullValue::Null);
                         let json = xml_string_to_json(std::str::from_utf8(m.data()).unwrap().to_string(), &conf).unwrap();
@@ -121,6 +119,7 @@ impl MetadataManager for Metadata {
                                 }                                 
                             }                              
                         }             
+                        
 
                         server_metadata::Metadata::clear_data();                                 
                     },

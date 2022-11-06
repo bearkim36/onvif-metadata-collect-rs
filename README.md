@@ -1,118 +1,74 @@
-# retina
+# dkant onvif metadata collect 
+노변 엣지디바이스와 대용량 메타데이터를 처리할 수 있는 RUST 기반의 ONVIF 메타데이터 수집서버
 
-[![crates.io version](https://img.shields.io/crates/v/retina.svg)](https://crates.io/crates/retina)
-[![Documentation](https://docs.rs/retina/badge.svg)](https://docs.rs/retina)
-[![CI](https://github.com/scottlamb/retina/workflows/CI/badge.svg)](https://github.com/scottlamb/retina/actions?query=workflow%3ACI)
+## Edge Device Featuers
 
-High-level RTSP multimedia streaming library, in Rust. Good support for
-ONVIF RTSP/1.0 IP surveillance cameras, as needed by
-[Moonfire NVR](https://github.com/scottlamb/moonfire-nvr). Works around
-brokenness in cheap closed-source cameras.
+*   [x] 한화 AI카메라 Metadata 수집
+*   [ ] 트루엔 AI카메라 Metadata 수집
+*   [x] 카메라 Error 발생 시 Failover 처리
+    *   [x] 랜선 뽑기
+    *   [x] 인위적 통신 차단
+    *   [x] 장기간 메타데이터 수집 안될 시 Keep-Alive 처리
+*   [x] Xml to JSON 처리
+*   [x] 멀티쓰레드로 분석서버로 HTTP Request처리 
+*   [x] 설치 가이드 라인 
 
-Status: In production use in Moonfire NVR. Many missing features.
 
-Progress:
+## Collect Server Featuers
 
-*   [x] client support
-    *   [x] basic authentication.
-    *   [x] digest authentication.
-    *   [x] RTP over TCP via RTSP interleaved channels.
-    *   [x] RTP over UDP (experimental).
-    *   *   [ ] re-order buffer. (Out-of-order packets are dropped now.)
-    *   [x] RTSP/1.0.
-    *   [ ] RTSP/2.0.
-    *   [ ] SRTP.
-    *   [ ] ONVIF backchannel support (for sending audio).
-    *   [ ] ONVIF replay mode.
-    *   [x] receiving RTCP Sender Reports (currently only uses the timestamp)
-    *   [ ] sending RTCP Receiver Reports
-*   [ ] server support
-*   I/O modes
-    *   [x] async with tokio
-    *   [ ] async-std
-    *   [ ] synchronous with std only
-*   codec depacketization
-    *   [x] video: H.264
-        ([RFC 6184](https://datatracker.ietf.org/doc/html/rfc6184))
-        *   [ ] SVC
-        *   [ ] periodic infra refresh
-        *   [x] multiple slices per picture
-        *   [ ] multiple SPS/PPS
-        *   [ ] interleaved mode
-        *   [x] AAC output format
-        *   [ ] Annex B output format ([#44](https://github.com/scottlamb/retina/issues/44))
-    *   audio
-        *   [x] AAC
-            *   [ ] interleaving
-        *   [x] [RFC 3551](https://datatracker.ietf.org/doc/html/rfc3551)
-            codecs: G.711, G.723, L8/L16
-    *   [x] application: ONVIF metadata
-*   [ ] clean, stable API. (See [#47](https://github.com/scottlamb/retina/issues/47).)
-*   quality errors
-*   *   [x] detailed error description text.
-*   *   [ ] programmatically inspectable error type.
-*   [ ] good functional testing coverage. (Currently lightly / unevenly tested.
-        Most depacketizers have no tests.)
-*   [ ] fuzz testing. (In progress.)
-*   [x] benchmark
+*   [x] 한화 AI카메라 Metadata 수집
+*   [ ] 트루엔 AI카메라 Metadata 수집
+*   [x] 카메라 Error 발생 시 Failover 처리
+    *   [x] 랜선 뽑기
+    *   [x] 인위적 통신 차단
+    *   [x] 장기간 메타데이터 수집 안될 시 Keep-Alive 처리
+*   [x] Xml to JSON 처리
+*   [x] 공유 데이터 메모리 관리 기능 
+*   [x] 차량 번호 판독기 (TS-ANPR) 테스트 완료 
+    *   [ ] 실시간 차량사진 수집
+    *   [ ] 실시간 차량번호 판독
+*   [x] 안면인식 데이터 테스트 완료 
+    *   [ ] 실시간 안면인식 데이터 수집 
+*   [ ] 분석서버에 데이터 전송 
+    *   [ ] 데이터 스키마 표준화 
+*   [x] 설치 가이드 라인
 
-Help welcome!
+## Install guilde
+### Windows (Edge Device)
+cargo build release 명령을 수행하여 릴리즈 버전으로 빌드한다.
 
-## Getting started
-
-Try the `mp4` example. It streams from an RTSP server to a `.mp4` file until
-you hit ctrl-C.
-
-```shell
-$ cargo run --package client mp4 --url rtsp://ip.address.goes.here/ --username admin --password test out.mp4
-...
-^C
+```sh
+    cargo build --release
 ```
 
-## Example client
+./target/release안에 .env파일을 복사 해 넣은 뒤, 파일에서 다음의 항목들을 수정한다.
 
-```shell
-$ cargo run --package client <CMD>
+```env
+
+# USE mode #1 Edge Device , #2 Server
+MODE = 1
+
+# Edge device configuration (Edge only)
+RTSP_URL = rtsp://192.168.0.7/profile1/media.smp
+RTSP_ID = admin
+RTSP_PW = r00tr00tr00t
+
+# Analysis Server Information
+ANALYSIS_SERVER_URL = http://127.0.0.1:8010/recvMetadata
+
+```
+커맨드 쉘 (관리자용)에서 다음과 같이 PM2와  인스톨한다.
+```sh
+npm install pm2 -g
+npm install pm2-windows-startup -g
+pm2-startup install
+
+#exe 파일을 pm2로 실행
+pm2 start onvif-metadata-rs.exe 
+
+#pm2 상태 저장
+pm2 save
 ```
 
-Where CMD:
+### 나머지는 이후 추가 예정
 
-* **info** - Gets info about available streams and exits.
-* **mp4** - Writes RTSP streams to mp4 file; exit with Ctrl+C.
-* **onvif** - Gets realtime onvif metadata if available; exit with Ctrl+C.
-
-## Example WebRTC proxy
-
-This allows viewing a H.264 video stream from your browser, with the help of
-[`webrtc-rs`](https://crates.io/crates/webrtc).
-
-```shell
-$ cargo run --package webrtc-proxy -- --help
-```
-
-## Acknowledgements
-
-This builds on the whole Rust ecosystem. A couple folks have been especially
-helpful:
-
-*   Sebastian Dröge, author of
-    [`rtsp-types`](https://crates.io/crates/rtsp-types)
-*   David Holroyd, author of
-    [`h264-reader`](https://crates.io/crates/h264-reader)
-
-## Why "retina"?
-
-It's a working name. Other ideas welcome. I started by looking at dictionary
-words with the letters R, T, S, and P in order and picking out ones related to
-video:
-
-| `$ egrep '^r.*t.*s.*p' /usr/share/dict/words'` |                                                                              |
-| ---------------------------------------------- | ---------------------------------------------------------------------------- |
-| <b>r</b>e<b>t</b>ino<b>s</b>co<b>p</b>e        | close but too long, thus `retina`                                            |
-| <b>r</b>e<b>t</b>ro<b>sp</b>ect                | good name for an NVR, but I already picked Moonfire                          |
-| <b>r</b>o<b>t</b>a<b>s</b>co<b>p</b>e          | misspelling of "rotascope" (animation tool) or archaic name for "gyroscope"? |
-
-## License
-
-Your choice of MIT or Apache; see [LICENSE-MIT.txt](LICENSE-MIT.txt) or
-[LICENSE-APACHE](LICENSE-APACHE.txt), respectively.
