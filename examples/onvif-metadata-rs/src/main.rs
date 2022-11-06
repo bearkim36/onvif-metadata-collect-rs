@@ -11,6 +11,7 @@ use anyhow::{anyhow, Error};
 
 mod edge_metadata;
 mod server_metadata;
+pub mod lpr;
 
 extern crate dotenv;
 
@@ -20,10 +21,13 @@ async fn server_mode() -> Result<(), Error> {
     let server_ip = String::from(env::var("SERVER_ADDR").unwrap_or("0.0.0.0".to_string()));
     let port : u16 = env::var("SERVER_PORT").unwrap_or("8000".to_string()).parse().unwrap();
     let client = Client::with_uri_str(mongo_uri).await.expect("failed to connect");
+    let lpr_result = lpr::lpr_init();
+    println!("LPR_RESULT: {:?}", lpr_result);
 
     tokio::spawn(async move { 
         loop {
-            println!("Start ONVIF session");
+            let result = lpr::anpr_read_file();
+            println!("LPR_RESULT: {:?}", result);
             
         }
     }).await?
