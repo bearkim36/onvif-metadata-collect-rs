@@ -21,7 +21,7 @@ dotenv = "0.15.0"
 quickxml_to_serde = "0.5.0"
 chrono = "0.4.22"
 serde_json = "1.0.87"
-reqwest = { version = "0.11", features = ["json"] }
+reqwest = { version = "0.11", features = ["json", "multipart"] }
 libloading = "0.7.3"
 
 [target.'cfg(windows)'.dependencies.winapi]

@@ -17,6 +17,9 @@ use serde_json::{Value,json};
 use quickxml_to_serde::{xml_string_to_json, Config,NullValue};
 use chrono::*;
 
+pub mod request;
+pub mod lpr;
+
 use crate::server_metadata;
 
 #[async_trait]
@@ -111,11 +114,26 @@ impl MetadataManager for Metadata {
                                     let clone1 = Arc::clone(&METADATA_MAP);
                                     if !clone1.lock().await.contains_key(&object_id.as_u64().unwrap()) {
                                         clone1.lock().await.insert(object_id.as_u64().unwrap(), metadata_object);
-                                    }
+                                    }                                    
                                     else {
                                         clone1.lock().await.entry(object_id.as_u64().unwrap()).and_modify(|e| { *e = metadata_object});
                                     }
+                                    
+                                    let metadata_class = cloned_data["Appearance"]["Class"]["Type"]["txt"].to_string();
+                                    // 얼굴일 때 안면 분석 쓰레드 돌림
+                                    if metadata_class.eq("face") {
+                                        tokio::spawn(async move {
+                                            let file_name = Uuid::new_v4();
+                                            request::fetch_url("a".to_string(), file_name.to_string()).await.unwrap();
 
+                                        });
+                                    }
+                                    // 자동차 번호판일 때 차량번호 판독 모듈 실행
+                                    else if metadata_class.eq("carplate") {
+
+                                    }
+
+                                    
                                 }                                 
                             }                              
                         }             

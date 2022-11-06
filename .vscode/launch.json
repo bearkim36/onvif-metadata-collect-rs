@@ -7,63 +7,6 @@
     {
       "type": "lldb",
       "request": "launch",
-      "name": "Debug unit tests in library 'retina'",
-      "cargo": {
-        "args": [
-          "test",
-          "--no-run",
-          "--lib",
-          "--package=retina"
-        ],
-        "filter": {
-          "name": "retina",
-          "kind": "lib"
-        }
-      },
-      "args": [],
-      "cwd": "${workspaceFolder}"
-    },
-    {
-      "type": "lldb",
-      "request": "launch",
-      "name": "Debug benchmark 'onvif-metadata-rs'",
-      "cargo": {
-        "args": [
-          "test",
-          "--no-run",
-          "--bench=onvif-metadata-rs",
-          "--package=retina"
-        ],
-        "filter": {
-          "name": "onvif-metadata-rs",
-          "kind": "bench"
-        }
-      },
-      "args": [],
-      "cwd": "${workspaceFolder}"
-    },
-    {
-      "type": "lldb",
-      "request": "launch",
-      "name": "Debug benchmark 'depacketize'",
-      "cargo": {
-        "args": [
-          "test",
-          "--no-run",
-          "--bench=depacketize",
-          "--package=retina"
-        ],
-        "filter": {
-          "name": "depacketize",
-          "kind": "bench"
-        }
-      },
-      "args": [],
-      "cwd": "${workspaceFolder}"
-    },
-    {
-      "type": "lldb",
-      "request": "launch",
       "name": "Debug executable 'onvif-metadata-rs'",
       "cargo": {
         "args": [
@@ -97,25 +40,6 @@
       },
       "args": [],
       "cwd": "${workspaceFolder}"
-    },
-    {
-      "type": "lldb",
-      "request": "launch",
-      "name": "Debug unit tests in library 'onvif-metadata-rs'",
-      "cargo": {
-        "args": [
-          "test",
-          "--no-run",
-          "--lib",
-          "--package=onvif-metadata-rs"
-        ],
-        "filter": {
-          "name": "onvif-metadata-rs",
-          "kind": "lib"
-        }
-      },
-      "args": [],
-      "cwd": "${workspaceFolder}"
-    }   
+    }
   ]
 }
