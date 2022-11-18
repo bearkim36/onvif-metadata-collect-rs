@@ -2,7 +2,6 @@
 name = "onvif-metadata-rs"
 version = "0.0.1"
 description = "onvif-metadata-rs"
-license = "MIT"
 edition = "2021"
 
 [dependencies]
@@ -21,7 +20,7 @@ dotenv = "0.15.0"
 quickxml_to_serde = "0.5.0"
 chrono = "0.4.22"
 serde_json = "1.0.87"
-reqwest = { version = "0.11", features = ["json", "multipart"] }
+reqwest = { version = "0.11.10", features = ["json", "blocking"] }
 libloading = "0.7.3"
 
 [target.'cfg(windows)'.dependencies.winapi]
