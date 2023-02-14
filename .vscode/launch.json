@@ -7,15 +7,15 @@
     {
       "type": "lldb",
       "request": "launch",
-      "name": "Debug executable 'onvif-metadata-rs'",
+      "name": "Debug executable 'server'",
       "cargo": {
         "args": [
           "build",
-          "--bin=onvif-metadata-rs",
+          "--bin=server",
           "--package=onvif-metadata-rs"
         ],
         "filter": {
-          "name": "onvif-metadata-rs",
+          "name": "server",
           "kind": "bin"
         }
       },
@@ -25,16 +25,16 @@
     {
       "type": "lldb",
       "request": "launch",
-      "name": "Debug unit tests in executable 'onvif-metadata-rs'",
+      "name": "Debug unit tests in executable 'edge'",
       "cargo": {
         "args": [
           "test",
           "--no-run",
-          "--bin=onvif-metadata-rs",
+          "--bin=edge",
           "--package=onvif-metadata-rs"
         ],
         "filter": {
-          "name": "onvif-metadata-rs",
+          "name": "edge",
           "kind": "bin"
         }
       },

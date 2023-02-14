@@ -19,9 +19,10 @@ async fn server_mode() -> Result<(), Error> {
     let server_ip = String::from(env::var("SERVER_ADDR").unwrap_or("0.0.0.0".to_string()));
     let port : u16 = env::var("SERVER_PORT").unwrap_or("8000".to_string()).parse().unwrap();
     let client = Client::with_uri_str(mongo_uri).await.expect("failed to connect");
-    let lpr_result = server_metadata::lpr::lpr_init();
-    println!("LPR_RESULT: {:?}", lpr_result);
 
+    #[cfg(target_os = "windows")]
+    let lpr_result = server_metadata::lpr::lpr_init();
+    
     tokio::spawn(async move { 
         loop {
            

@@ -1,3 +1,4 @@
+#[cfg(target_os = "windows")]
 extern crate winapi;
 
 extern crate libloading;
@@ -9,7 +10,7 @@ use std::ffi::{CString, CStr};
 use std::str::Utf8Error;
 
 
-
+#[cfg(target_os = "windows")]
 #[cfg(target_arch="x86_64")]
 fn load_ordinal_lib() -> Library {
     unsafe {
@@ -17,7 +18,7 @@ fn load_ordinal_lib() -> Library {
     }
 }
 
-
+#[cfg(target_os = "windows")]
 pub fn lpr_init() -> Result<&'static str, Utf8Error> {
   let lib = load_ordinal_lib();
   let func: libloading::Symbol<unsafe extern fn(*const c_char) -> *const c_char>  =   unsafe{lib.get(b"anpr_initialize").unwrap()};
@@ -32,6 +33,7 @@ pub fn lpr_init() -> Result<&'static str, Utf8Error> {
   result
 }
 
+#[cfg(target_os = "windows")]
 pub fn anpr_read_file(file_path:String) -> Result<&'static str, Utf8Error> {
   let lib = load_ordinal_lib();
   let func: libloading::Symbol<unsafe extern fn(*const c_char, *const c_char, *const c_char) -> *const c_char>  =   unsafe{lib.get(b"anpr_read_file").unwrap()};
