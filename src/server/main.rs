@@ -6,19 +6,21 @@
 
 use std::{thread, time, env, io};
 use std::path::PathBuf;
-use mongodb::{bson::doc, options::IndexOptions, Client, Collection, IndexModel};
 use anyhow::{anyhow, Error};
 
 mod server_metadata;
+mod fclt;
 
 extern crate dotenv;
 
 async fn server_mode() -> Result<(), Error> {
     println!("MONGO_URI: {}", env::var("MONGO_URI").expect("MONGO_URI not found"));
     let mongo_uri = env::var("MONGO_URI").unwrap();
+    let mongo_db_name = env::var("MONGO_DB_NAME").unwrap();
     let server_ip = String::from(env::var("SERVER_ADDR").unwrap_or("0.0.0.0".to_string()));
     let port : u16 = env::var("SERVER_PORT").unwrap_or("8000".to_string()).parse().unwrap();
-    let client = Client::with_uri_str(mongo_uri).await.expect("failed to connect");
+    let fclt = fclt::FcltLib::new(mongo_uri, mongo_db_name);
+    fclt.await.get_fclt();
 
     // #[cfg(target_os = "windows")]
     // let lpr_result = server_metadata::lpr::lpr_init();
