@@ -1,6 +1,9 @@
 extern crate chrono;
+extern crate image;
 
 use std::sync::{Arc};
+use std::time::{SystemTime, UNIX_EPOCH};
+
 use tokio::sync::Mutex;
 use std::collections::HashMap;
 use futures::StreamExt;
@@ -14,8 +17,10 @@ use uuid::Uuid;
 use lazy_static::lazy_static; 
 use serde_json::{Value,json};
 
+use reqwest::Client; 
 use quickxml_to_serde::{xml_string_to_json, Config,NullValue};
 use chrono::*;
+
 
 pub mod request;
 pub mod lpr;
@@ -26,6 +31,7 @@ use crate::server_metadata;
 pub trait MetadataManager {
   async fn run_onvif(&self) -> Result<(), Error> ;   
   fn clear_data();
+  fn save_bestshot(ip:String, image_ref:String);
 }
 
 pub struct Metadata {  
@@ -95,7 +101,7 @@ impl MetadataManager for Metadata {
                         let conf = Config::new_with_custom_values(true, "", "txt", NullValue::Null);
                         let json = xml_string_to_json(std::str::from_utf8(m.data()).unwrap().to_string(), &conf).unwrap();
                         let meta = json["MetadataStream"]["VideoAnalytics"].clone();
-                        let date_str:String = meta["Frame"]["UtcTime"].to_string().replace("\"", "");                                                                                                         
+                        let date_str:String = meta["Frame"]["UtcTime"].to_string().replace("\"", "");
                                    
 
                         if date_str != "null" {
@@ -106,7 +112,7 @@ impl MetadataManager for Metadata {
                                     let object_id = cloned_data["ObjectId"].clone();
                                     let mut metadata_object = MetadataObject{
                                         object_id: object_id.to_string(),
-                                        class: cloned_data["Appearance"]["Class"]["Type"]["txt"].to_string(),
+                                        class: cloned_data["Appearance"]["Class"]["Type"]["txt"].to_string().replace("\"", ""),
                                         object_array: json!(obj.clone()),
                                         last_time: date.timestamp_millis(),
                                         cross_line: vec![]
@@ -120,6 +126,10 @@ impl MetadataManager for Metadata {
                                     }
                                     
                                     let metadata_class = cloned_data["Appearance"]["Class"]["Type"]["txt"].to_string();
+                                    if let Some(image_ref) = cloned_data["Appearance"].get("ImageRef") {                                        
+                                        Self::save_bestshot("192.168.0.16".to_string(), image_ref.to_string().replace("\"", ""));
+
+                                    }
                                     // 얼굴일 때 안면 분석 쓰레드 돌림
                                     if metadata_class.eq("face") {
                                         tokio::spawn(async move {
@@ -128,9 +138,18 @@ impl MetadataManager for Metadata {
 
                                         });
                                     }
+                                    else if metadata_class.eq("Human") {
+                                       
+                                    }
+                                    else if metadata_class.eq("Head") {
+                                        
+                                    }
+                                    else if metadata_class.eq("Vehicle") {
+                                        
+                                    }
                                     // 자동차 번호판일 때 차량번호 판독 모듈 실행
-                                    else if metadata_class.eq("carplate") {
-
+                                    else if metadata_class.eq("LicensePlate") {
+                                     
                                     }
 
                                     
@@ -166,5 +185,20 @@ impl MetadataManager for Metadata {
             clone2.lock().await.remove(&k);
         }                                      
     });            
+  }
+
+  fn save_bestshot(ip:String, image_ref:String) {
+    tokio::spawn(async move {
+        let time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
+        let file_name = format!("/home/bearkim/collect_test/{:?}.jpg", time);
+        let url = format!("http://{}/{}", ip, image_ref);
+        let client = Client::new();                                            
+
+        let resp = client.get(url).send().await.unwrap();
+        let img_bytes = resp.bytes().await.unwrap();                                                                                        
+        let img = image::load_from_memory(&img_bytes).unwrap();
+
+        img.save(file_name).unwrap();
+    });
   }
 }

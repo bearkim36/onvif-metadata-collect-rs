@@ -20,15 +20,38 @@ async fn server_mode() -> Result<(), Error> {
     let port : u16 = env::var("SERVER_PORT").unwrap_or("8000".to_string()).parse().unwrap();
     let client = Client::with_uri_str(mongo_uri).await.expect("failed to connect");
 
-    #[cfg(target_os = "windows")]
-    let lpr_result = server_metadata::lpr::lpr_init();
-    
-    tokio::spawn(async move { 
-        loop {
-           
+    // #[cfg(target_os = "windows")]
+    // let lpr_result = server_metadata::lpr::lpr_init();
+
+    let threads: Vec<_> = (0..1)
+        .map(|i| {            
+            tokio::spawn(async move {
+                let rtsp_url = env::var("RTSP_URL").unwrap();
+                let rtsp_id = env::var("RTSP_ID").unwrap();
+                let rtsp_pw = env::var("RTSP_PW").unwrap();
             
-        }
-    }).await?
+                let metadata = server_metadata::Metadata { 
+                    url: String::from(rtsp_url),
+                    username: String::from(rtsp_id), 
+                    password: String::from(rtsp_pw),
+                };
+                loop {
+                    println!("{} Start ONVIF session", i);
+                    server_metadata::MetadataManager::run_onvif(&metadata).await;
+                    
+                    println!("retry 5sec after");
+                    thread::sleep(time::Duration::from_secs(5));                    
+                }
+            })
+        })
+        .collect();
+
+    for handle in threads {
+        tokio::join!(handle);
+    //     handle.join().unwrap();
+    }
+
+    Ok(())
 }
 
 
@@ -48,7 +71,6 @@ async fn main() {
 
     println!("Boot on Server Mode");
     server_mode().await;        
-
 
 }
 

@@ -18,7 +18,7 @@ async fn edge_device_mode() -> Result<(), Error> {
     let rtsp_id = env::var("RTSP_ID").unwrap();
     let rtsp_pw = env::var("RTSP_PW").unwrap();
 
-    tokio::spawn(async move {                
+    tokio::spawn(async move {
         let metadata = edge_metadata::Metadata { 
             url: String::from(rtsp_url),
             username: String::from(rtsp_id), 
