@@ -3,6 +3,7 @@ extern crate image;
 
 use std::sync::{Arc};
 use std::time::{SystemTime, UNIX_EPOCH};
+use std::fs;
 
 use tokio::sync::Mutex;
 use std::collections::HashMap;
@@ -58,14 +59,19 @@ impl MetadataManager for Metadata {
   async fn run_onvif(&self) -> Result<(), Error> {
 
     println!("onvif url: {}", self.url.clone());
-    println!("onvif id/pw {}/{}", self.username.clone(), self.password.clone());    
+
+    // hanwha
+    let rtsp_url = format!("rtsp://{}/profile1/media.smp", self.url.clone());
+
+    // truen
+
     let session_group = Arc::new(SessionGroup::default());
     let creds = Some(retina::client::Credentials {
         username : self.username.clone(),
         password: self.password.clone(),
     });
     let mut session = retina::client::Session::describe(
-        Url::parse(self.url.as_str())?,
+        Url::parse(&rtsp_url.to_string())?,
         retina::client::SessionOptions::default()
             .creds(creds)
             .user_agent("DK Edge metadata".to_owned())
@@ -126,7 +132,7 @@ impl MetadataManager for Metadata {
                                     
                                     let metadata_class = cloned_data["Appearance"]["Class"]["Type"]["txt"].to_string();
                                     if let Some(image_ref) = cloned_data["Appearance"].get("ImageRef") {                                        
-                                        Self::save_bestshot("192.168.0.16".to_string(), image_ref.to_string().replace("\"", ""));
+                                        Self::save_bestshot(self.url.clone().to_string(), image_ref.to_string().replace("\"", ""));
 
                                     }
                                     // 얼굴일 때 안면 분석 쓰레드 돌림
@@ -189,8 +195,10 @@ impl MetadataManager for Metadata {
   fn save_bestshot(ip:String, image_ref:String) {
     tokio::spawn(async move {
         let time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
-        let file_name = format!("/home/bearkim/collect_test/{:?}.jpg", time);
-        let url = format!("http://{}/{}", ip, image_ref);
+        let file_path = format!("/home/bearkim/collect_test/{}", ip);
+        fs::create_dir_all(file_path.clone()).unwrap();
+        let file_name = format!("{}/{:?}.jpg", file_path.clone(), time);
+        let url = format!("http://{}{}", ip, image_ref);
         let client = Client::new();                                            
 
         let resp = client.get(url).send().await.unwrap();
