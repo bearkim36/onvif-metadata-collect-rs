@@ -8,11 +8,12 @@ pub struct FcltLib {
     db : mongodb::Database
 }
 
-
+#[allow(non_snake_case)]
 #[derive(Debug, Serialize, Deserialize)]
 struct FcltTypeData {
-    value: String,
-    label: String
+    dataKey: String,
+    label: String,
+    value: String
 }
 
 #[allow(non_snake_case)]
@@ -20,7 +21,7 @@ struct FcltTypeData {
 struct FcltModel {
     fcltId: String,
     fcltName: String,
-    fcltTypeData: FcltTypeData
+    fcltTypeData: mongodb::bson::Bson
 }
 
 impl FcltLib {
@@ -40,7 +41,7 @@ impl FcltLib {
         
         
         
-        println!("{:?}", fclt_models[0]);
+        println!("{:?}", fclt_models[0].fcltTypeData.get(0));
         
     }
 }

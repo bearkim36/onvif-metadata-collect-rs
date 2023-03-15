@@ -30,19 +30,21 @@ use crate::server_metadata;
 #[async_trait]
 pub trait MetadataManager {
   async fn run_onvif(&self) -> Result<(), Error> ;   
-  fn clear_data();
-  fn save_bestshot(ip:String, image_ref:String);
+
+  fn save_bestshot(img_save_path:String, ip:String, image_ref:String);
 }
 
 pub struct Metadata {  
   pub url: String,  
   pub username: String,  
   pub password: String,
+  pub img_save_path: String,
+  pub fclt_id: String,
 }
 
 #[derive(Clone)]
 #[derive(Debug)]
-pub struct MetadataObject {
+pub struct MetadataObject {    
     pub object_id: String,
     pub class: String,
     pub object_array: Value,
@@ -96,7 +98,7 @@ impl MetadataManager for Metadata {
         .await?
         .demuxed()?;
 
-    //
+    
     loop {
         tokio::select! {
             item = session.next() => {
@@ -110,10 +112,10 @@ impl MetadataManager for Metadata {
                                    
 
                         if date_str != "null" {
-                            let date = NaiveDateTime::parse_from_str(&date_str, "%Y-%m-%dT%H:%M:%S%.3fZ").unwrap();                            
+                            let date = NaiveDateTime::parse_from_str(&date_str, "%Y-%m-%dT%H:%M:%S%.3fZ").unwrap();
                             for objects in meta["Frame"]["Object"].as_array().into_iter() {
                                 for obj in objects.iter() {
-                                    let cloned_data = obj.clone();                                    
+                                    let cloned_data = obj.clone();
                                     let object_id = cloned_data["ObjectId"].clone();
                                     let mut metadata_object = MetadataObject{
                                         object_id: object_id.to_string(),
@@ -132,7 +134,8 @@ impl MetadataManager for Metadata {
                                     
                                     let metadata_class = cloned_data["Appearance"]["Class"]["Type"]["txt"].to_string();
                                     if let Some(image_ref) = cloned_data["Appearance"].get("ImageRef") {                                        
-                                        Self::save_bestshot(self.url.clone().to_string(), image_ref.to_string().replace("\"", ""));
+                                        
+                                        Self::save_bestshot(self.img_save_path.clone(), self.url.clone().to_string(), image_ref.to_string().replace("\"", ""));
 
                                     }
                                     // 얼굴일 때 안면 분석 쓰레드 돌림
@@ -162,8 +165,7 @@ impl MetadataManager for Metadata {
                             }                              
                         }             
                         
-
-                        server_metadata::Metadata::clear_data();                                 
+                        
                     },
                     _ => continue,
                 };
@@ -175,27 +177,27 @@ impl MetadataManager for Metadata {
   }
 
 
-  fn clear_data() {    
-    tokio::spawn(async move {                
-        let clone2 = Arc::clone(&METADATA_MAP);
-      //  println!("{}", clone2.lock().await.len());        
-        let mut keys:Vec<u64> = Vec::new();
-        let current_time = Utc::now().timestamp_millis();
-        for (k, v) in METADATA_MAP.lock().await.iter() {
-            if (current_time - v.last_time) > 15000 {
-                keys.push(*k);
-            }
-        }        
-        for k in keys {
-            clone2.lock().await.remove(&k);
-        }                                      
-    });            
-  }
+//   fn clear_data() {    
+//     tokio::spawn(async move {                
+//         let clone2 = Arc::clone(&METADATA_MAP);
+//       //  println!("{}", clone2.lock().await.len());        
+//         let mut keys:Vec<u64> = Vec::new();
+//         let current_time = Utc::now().timestamp_millis();
+//         for (k, v) in METADATA_MAP.lock().await.iter() {
+//             if (current_time - v.last_time) > 15000 {
+//                 keys.push(*k);
+//             }
+//         }        
+//         for k in keys {
+//             clone2.lock().await.remove(&k);
+//         }                                      
+//     });            
+//   }
 
-  fn save_bestshot(ip:String, image_ref:String) {
-    tokio::spawn(async move {
+  fn save_bestshot(img_save_path:String, ip:String, image_ref:String) {
+    tokio::spawn(async move {        
         let time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
-        let file_path = format!("/home/bearkim/collect_test/{}", ip);
+        let file_path = format!("{}/{}",img_save_path, ip);
         fs::create_dir_all(file_path.clone()).unwrap();
         let file_name = format!("{}/{:?}.jpg", file_path.clone(), time);
         let url = format!("http://{}{}", ip, image_ref);
