@@ -22,36 +22,45 @@ async fn server_mode() -> Result<(), Error> {
     let server_ip = String::from(env::var("SERVER_ADDR").unwrap_or("0.0.0.0".to_string()));    
     let port : u16 = env::var("SERVER_PORT").unwrap_or("8000".to_string()).parse().unwrap();
     let fclt_obj = fclt::FcltLib::new(mongo_uri, mongo_db_name).await;
-    fclt_obj.get_fclt().await;
+    let fclt_data = fclt_obj.get_fclt().await;
 
-    let sample_list = [
-        ["172.40.14.222",	  "admin",	"hanam2022!"],
-    ];
-    let threads: Vec<_> = (0..sample_list.len())
-        .map(|i| {            
-            tokio::spawn(async move {
+
+    let threads: Vec<_> = (0..fclt_data.len())
+        .map(|i| {                       
+            let fd = fclt_data.to_owned();
+            tokio::spawn(async move {                                
                 // let rtsp_url = env::var("RTSP_URL").unwrap();
                 // let rtsp_id = env::var("RTSP_ID").unwrap();
                 // let rtsp_pw = env::var("RTSP_PW").unwrap();
-            
-                let rtsp_url = sample_list[i][0];
-                let rtsp_id = sample_list[i][1];
-                let rtsp_pw = sample_list[i][2];
-                let fclt_id = "test".to_string();
+                
+                let rtsp_id = &fd[i].camera_id;
+                let rtsp_pw = &fd[i].camera_pass;
+                let fclt_id = &fd[i].fclt_id;
+                let camera_ip = &fd[i].camera_ip;
+                let rtsp_port = &fd[i].rtsp_port;                
+
+                let ai_cam_model = &fd[i].ai_cam_model;
                 let img_save_path = String::from(env::var("IMG_SAVE_PATH").unwrap_or("./".to_string()));
 
                 let metadata = server_metadata::Metadata { 
-                    url: String::from(rtsp_url),
+                    camera_ip: String::from(camera_ip),
+                    rtsp_port: String::from(rtsp_port),                    
                     username: String::from(rtsp_id), 
                     password: String::from(rtsp_pw),
                     fclt_id: String::from(fclt_id),
-                    img_save_path: img_save_path,                    
-                };
-                loop {
+                    img_save_path,
+                    ai_cam_model: String::from(ai_cam_model)
+                };                
+                loop {                          
+
+                    if ai_cam_model.eq("") {
+                        break;                        
+                    }
+
                     println!("{} Start ONVIF session", i);
                     server_metadata::MetadataManager::run_onvif(&metadata).await;
                     
-                    thread::sleep(time::Duration::from_secs(1));                    
+                    thread::sleep(time::Duration::from_secs(5));
                 }
             })
         })
