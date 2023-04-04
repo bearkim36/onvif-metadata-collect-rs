@@ -6,8 +6,9 @@ use uuid::Uuid;
 use std::fs;
 use reqwest::Client; 
 
+use crate::server_metadata::facerecognition;
 
-pub async fn proc(json:Value, img_save_path:String, camera_ip:String) -> Result<(), Error> {
+pub async fn proc(json:Value,  camera_ip:String, http_port:String, img_save_path:String, face_recognition_url:String) -> Result<(), Error> {
   let meta = json["MetadataStream"]["VideoAnalytics"].clone();
   let date_str:String = meta["Frame"]["UtcTime"].to_string().replace("\"", "");
              
@@ -18,7 +19,7 @@ pub async fn proc(json:Value, img_save_path:String, camera_ip:String) -> Result<
       if meta["Frame"]["Object"].as_array().iter().len() == 0 {            
           let cloned_data = meta["Frame"]["Object"].clone();
           if !cloned_data.is_null() {                                
-            proc_metadata(cloned_data, img_save_path, camera_ip).await.unwrap();
+            proc_metadata(cloned_data, camera_ip, http_port, img_save_path, face_recognition_url).await.unwrap();
           }                
          
       }
@@ -27,7 +28,7 @@ pub async fn proc(json:Value, img_save_path:String, camera_ip:String) -> Result<
           for objects in meta["Frame"]["Object"].as_array().into_iter() {
               for obj in objects.iter() {
                   let cloned_data = obj.clone();
-                  proc_metadata(cloned_data, img_save_path.clone(), camera_ip.clone()).await.unwrap();
+                  proc_metadata(cloned_data,  camera_ip.clone(), http_port.clone(), img_save_path.clone(), face_recognition_url.clone()).await.unwrap();
               }
           }
       }                
@@ -35,7 +36,7 @@ pub async fn proc(json:Value, img_save_path:String, camera_ip:String) -> Result<
   Ok(())
 }
 
-async fn proc_metadata(metadata:Value, img_save_path:String, camera_ip:String) -> Result<(), Error> {  
+async fn proc_metadata(metadata:Value, camera_ip:String, http_port:String, img_save_path:String, face_recognition_url:String) -> Result<(), Error> {  
   let cloned_data = metadata.clone();  
   let object_id = cloned_data["ObjectId"].clone();
 
@@ -46,24 +47,14 @@ async fn proc_metadata(metadata:Value, img_save_path:String, camera_ip:String) -
   //     last_time: date.timestamp_millis(),
   //     cross_line: vec![]
   // };
-  
   let metadata_class = cloned_data["Appearance"]["Class"]["Type"]["txt"].to_string();
-  let mut save_file_name:String = "".to_string();
-  if let Some(image_ref) = cloned_data["Appearance"].get("ImageRef") {      
-    save_file_name = save_bestshot(img_save_path, camera_ip, image_ref.to_string().replace("\"", "")).await.unwrap();
-    println!("{}", save_file_name);
-  }
-  // 얼굴일 때 안면 분석 쓰레드 돌림
-  if metadata_class.contains("Head") {
-      if !cloned_data["Appearance"]["ImageRef"].is_null() {
-        
 
-          let file_name = Uuid::new_v4();
-          // request::fetch_url("a".to_string(), file_name.to_string()).await.unwrap();
-      }
+  // 메타데이터 처리
+  if metadata_class.contains("Head") {    
+
   }
   else if metadata_class.contains("Human") {
-  
+    
   }
 
   else if metadata_class.contains("Vehicle") {
@@ -71,20 +62,43 @@ async fn proc_metadata(metadata:Value, img_save_path:String, camera_ip:String) -
   }
   // 자동차 번호판일 때 차량번호 판독 모듈 실행
   else if metadata_class.contains("LicensePlate") {
-  
+
   }
+  
+  let mut save_file_name:String = "".to_string();
+  if let Some(image_ref) = cloned_data["Appearance"].get("ImageRef") {      
+    println!("{}",cloned_data["Appearance"]);
+    save_file_name = save_bestshot(img_save_path, camera_ip, http_port, image_ref.to_string().replace("\"", "")).await.unwrap();
+    if metadata_class.contains("Face") {                
+        println!("{}", image_ref);
+        facerecognition::recog(save_file_name, face_recognition_url).await.unwrap();
+          
+            // request::fetch_url("a".to_string(), file_name.to_string()).await.unwrap();            
+    }
+    else if metadata_class.contains("Human") {
+      
+    }
+  
+    else if metadata_class.contains("Vehicle") {
+        
+    }
+    // 자동차 번호판일 때 차량번호 판독 모듈 실행
+    else if metadata_class.contains("LicensePlate") {
+    
+    }      
+  }  
 
   Ok(())
 }
 
-async fn save_bestshot(img_save_path:String, ip:String, image_ref:String) -> Result<String, Error> {
+async fn save_bestshot(img_save_path:String, ip:String, http_port:String, image_ref:String) -> Result<String, Error> {
   let file_path = format!("{}/{}",img_save_path, ip);
   let file_name = format!("{}/{:?}.jpg", file_path.clone(), Uuid::new_v4());
   let return_file_name = file_name.to_owned();
   // tokio::spawn(async move {        
 
   fs::create_dir_all(file_path.clone()).unwrap();        
-  let url = format!("http://{}{}", ip, image_ref);
+  let url = format!("http://{}:{}{}", ip, http_port, image_ref);
   let client = Client::new();                                            
 
   let resp = client.get(url).send().await.unwrap();

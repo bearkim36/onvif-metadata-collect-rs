@@ -4,12 +4,12 @@
  * 
  */
 
-use std::{thread, time, env, io};
-use std::path::PathBuf;
+use std::{thread, time, env};
 use anyhow::{anyhow, Error};
 
 mod server_metadata;
 mod fclt;
+mod util;
 
 extern crate dotenv;
 
@@ -37,19 +37,23 @@ async fn server_mode() -> Result<(), Error> {
                 let rtsp_pw = &fd[i].camera_pass;
                 let fclt_id = &fd[i].fclt_id;
                 let camera_ip = &fd[i].camera_ip;
+                let http_port = &fd[i].http_port;
                 let rtsp_port = &fd[i].rtsp_port;                
 
                 let ai_cam_model = &fd[i].ai_cam_model;
                 let img_save_path = String::from(env::var("IMG_SAVE_PATH").unwrap_or("./".to_string()));
+                let face_recognition_url = String::from(env::var("FACE_RECOGNITION_URL").unwrap_or("".to_string()));
 
-                let metadata = server_metadata::Metadata { 
+                let metadata = server_metadata::MetadataConfig { 
                     camera_ip: String::from(camera_ip),
+                    http_port: String::from(http_port),
                     rtsp_port: String::from(rtsp_port),                    
                     username: String::from(rtsp_id), 
                     password: String::from(rtsp_pw),
                     fclt_id: String::from(fclt_id),
                     img_save_path,
-                    ai_cam_model: String::from(ai_cam_model)
+                    ai_cam_model: String::from(ai_cam_model),
+                    face_recognition_url
                 };                
                 loop {                          
 
@@ -75,17 +79,9 @@ async fn server_mode() -> Result<(), Error> {
 }
 
 
-fn get_env_path() -> io::Result<PathBuf> {
-    let mut dir = env::current_exe()?;
-    dir.pop();    
-    dir.push(".env");
-    Ok(dir)
-}
-
-
 #[tokio::main]
 async fn main() { 
-    let path = get_env_path().expect("Couldn't");    
+    let path = util::get_env_path().expect("Couldn't");    
     println!("{}", path.display());
     dotenv::from_filename(path).expect("Failed to open directory");
 

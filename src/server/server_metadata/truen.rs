@@ -6,8 +6,9 @@ use uuid::Uuid;
 use std::fs;
 use reqwest::Client; 
 
+use crate::server_metadata::facerecognition;
 
-pub async fn proc(json:Value, img_save_path:String, camera_ip:String) -> Result<(), Error> {
+pub async fn proc(json:Value, camera_ip:String, http_port:String, img_save_path:String, face_recognition_url:String) -> Result<(), Error> {
     let meta = json["MetaDataStream"]["VideoAnalytics"].clone();
     let date_str:String = meta["Frame"]["UtcTime"].to_string().replace("\"", "");
     
@@ -18,7 +19,7 @@ pub async fn proc(json:Value, img_save_path:String, camera_ip:String) -> Result<
             let cloned_data = meta["Frame"]["Object"].clone();
 
             if !cloned_data.is_null() {                                
-                proc_metadata(cloned_data, img_save_path, camera_ip).await.unwrap();
+                proc_metadata(cloned_data, camera_ip, http_port, img_save_path, face_recognition_url).await.unwrap();
             }                
            
         }
@@ -27,7 +28,7 @@ pub async fn proc(json:Value, img_save_path:String, camera_ip:String) -> Result<
             for objects in meta["Frame"]["Object"].as_array().into_iter() {
                 for obj in objects.iter() {
                     let cloned_data = obj.clone();
-                    proc_metadata(cloned_data, img_save_path.clone(), camera_ip.clone()).await.unwrap();         
+                    proc_metadata(cloned_data, camera_ip.clone(), http_port.clone(), img_save_path.clone(), face_recognition_url.clone()).await.unwrap();         
                 }
             }
         }   
@@ -35,7 +36,7 @@ pub async fn proc(json:Value, img_save_path:String, camera_ip:String) -> Result<
     Ok(())
   }
 
-  async fn proc_metadata(metadata:Value, img_save_path:String, camera_ip:String) -> Result<(), Error> {
+  async fn proc_metadata(metadata:Value, camera_ip:String, http_port:String, img_save_path:String, face_recognition_url:String) -> Result<(), Error> {
     let cloned_data = metadata.clone();
     let object_id = cloned_data["ObjectId"].clone();
     // let mut metadata_object = MetadataObject{
@@ -46,15 +47,15 @@ pub async fn proc(json:Value, img_save_path:String, camera_ip:String) -> Result<
     //     cross_line: vec![]
     // };   
                                                         
-
+    let mut save_file_name:String = "".to_string();
     let metadata_class = cloned_data["Appearance"]["Class"]["Type"]["txt"].to_string();
     if let Some(image_ref) = cloned_data["Appearance"].get("ImageRef") {
-        let save_file_name = save_bestshot(img_save_path, camera_ip, image_ref.to_string().replace("\"", "")).await.unwrap();
+        save_file_name = save_bestshot(img_save_path, camera_ip, image_ref.to_string().replace("\"", "")).await.unwrap();
     }
     // 얼굴일 때 안면 분석 쓰레드 돌림
     if metadata_class.contains("Head") {
         if !cloned_data["Appearance"]["ImageRef"].is_null() {
-            let file_name = Uuid::new_v4();
+            facerecognition::recog(save_file_name, face_recognition_url).await.unwrap();
             // request::fetch_url("a".to_string(), file_name.to_string()).await.unwrap();
         }
     }

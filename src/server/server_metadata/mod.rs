@@ -21,10 +21,11 @@ use serde_json::{Value,json};
 use quickxml_to_serde::{xml_string_to_json, Config,NullValue};
 // use chrono::*;
 
-pub mod request;
-pub mod lpr;
-pub mod hanwha;
-pub mod truen;
+mod request;
+mod lpr;
+mod hanwha;
+mod truen;
+mod facerecognition;
 
 // use crate::server_metadata;
 
@@ -37,14 +38,16 @@ pub trait MetadataManager {
 //   async fn save_truen_bestshot(img_save_path:String, ip:String, image_ref:String) -> Result<(), Error>;
 }
 
-pub struct Metadata {  
+pub struct MetadataConfig {  
   pub camera_ip: String,  
+  pub http_port: String,  
   pub rtsp_port: String,  
   pub username: String,  
   pub password: String,
   pub img_save_path: String,
   pub fclt_id: String,
   pub ai_cam_model: String,
+  pub face_recognition_url: String
 }
 
 #[derive(Clone)]
@@ -62,7 +65,7 @@ pub struct MetadataObject {
 // }
 
 #[async_trait]
-impl MetadataManager for Metadata {  
+impl MetadataManager for MetadataConfig {  
   async fn run_onvif(&self) -> Result<(), Error> {    
     let mut rtsp_url = "".to_string();
     if self.ai_cam_model.contains("hanwha") {
@@ -115,10 +118,10 @@ impl MetadataManager for Metadata {
                         let json = xml_string_to_json(std::str::from_utf8(m.data()).unwrap().to_string(), &conf).unwrap();
         
                         if self.ai_cam_model.contains("hanwha") {
-                            hanwha::proc(json, self.img_save_path.clone(), self.camera_ip.clone()).await.unwrap();
+                            hanwha::proc(json, self.camera_ip.clone(), self.http_port.clone(), self.img_save_path.clone(), self.face_recognition_url.clone()).await.unwrap();
                         }
                         else if self.ai_cam_model.contains("truen") {
-                            truen::proc(json, self.img_save_path.clone(), self.camera_ip.clone()).await.unwrap();
+                            truen::proc(json, self.camera_ip.clone(), self.http_port.clone(), self.img_save_path.clone(), self.face_recognition_url.clone()).await.unwrap();
                         }
 
                     },

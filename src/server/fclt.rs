@@ -30,6 +30,7 @@ pub struct FcltData {
     pub fclt_name: String,
     pub camera_ip: String,
     pub rtsp_port: String,    
+    pub http_port: String,
     pub camera_id: String,
     pub camera_pass: String,
     pub ai_cam_model: String,
@@ -61,7 +62,8 @@ impl FcltLib {
             let mut camera_id:String = "".to_string();
             let mut camera_pass:String = "".to_string();
             let mut ai_cam_model:String = "".to_string();
-            
+            let mut http_port:String = "80".to_string();
+
             for j in 0..fclt_models[i].fcltTypeData.len() {                 
                 if fclt_models[i].fcltTypeData[j].dataKey.to_string().contains("cameraIp") {
                     camera_ip = fclt_models[i].fcltTypeData[j].value.to_string().replace("\"", "");
@@ -78,6 +80,9 @@ impl FcltLib {
                 else if fclt_models[i].fcltTypeData[j].dataKey.to_string().contains("aiCamModel") {
                     ai_cam_model = fclt_models[i].fcltTypeData[j].value.to_string().replace("\"", "");
                 }
+                else if fclt_models[i].fcltTypeData[j].dataKey.to_string().contains("httpPort") {
+                    http_port = fclt_models[i].fcltTypeData[j].value.to_string().replace("\"", "");
+                }
             }
 
             let fd = FcltData {
@@ -88,6 +93,7 @@ impl FcltLib {
                 camera_id: camera_id,
                 camera_pass: camera_pass,
                 ai_cam_model: ai_cam_model,
+                http_port: http_port
             };
 
 
