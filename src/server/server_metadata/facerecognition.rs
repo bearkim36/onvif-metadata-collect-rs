@@ -2,12 +2,20 @@ use anyhow::Error;
 use reqwest::{multipart, Body, Client};
 use tokio::fs::File;
 use tokio_util::codec::{BytesCodec, FramedRead};
+use serde_json::{Value,json};
+use serde::Deserialize;
 
 use crate::util;
 
-pub async fn recog(filePath:String, face_recognition_url:String) -> Result<(String), Error>  {
-  let client = Client::new();
-  let file = File::open(filePath).await?;
+#[derive(Debug)]
+#[derive(Deserialize)]
+pub struct FaceResult {
+    pub result: Value,
+}
+
+pub async fn recog(file_path:String, face_recognition_url:String) -> Result<FaceResult, Error>  {
+  let client = Client::new();  
+  let file = File::open(file_path).await?;  
 
   // read file body stream
   let stream = FramedRead::new(file, BytesCodec::new());
@@ -21,12 +29,12 @@ pub async fn recog(filePath:String, face_recognition_url:String) -> Result<(Stri
   //create the multipart form
   let form = multipart::Form::new()
       .text("options", "image.jpg")      
-      .part("value", some_file);
+      .part("file", some_file);
   
   //send request
   let url = format!("{}/lunaApi/createFace",face_recognition_url);
-  let response = client.post(url).multipart(form).send().await?;
-  let result = response.text().await?;
+  let response = client.post(url).multipart(form).send().await?;  
+  let json_value = response.json::<FaceResult>().await?;  
 
-  Ok(result)  
+  Ok(json_value)  
 }

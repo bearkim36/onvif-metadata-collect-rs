@@ -1,4 +1,3 @@
-use std::time::{SystemTime, UNIX_EPOCH};
 use anyhow::Error;
 use chrono::NaiveDateTime;
 use serde_json::Value;
@@ -6,7 +5,42 @@ use uuid::Uuid;
 use std::fs;
 use reqwest::Client; 
 
+
 use crate::server_metadata::facerecognition;
+
+struct XY{
+  x:u32,
+  y:u32,
+}
+struct Rect {
+  top: u32,
+  bottom: u32,
+  left: u32,
+  right: u32,
+  center: XY,
+  translate: XY,
+}
+
+struct MetadataClass {
+  r#type: String,
+  likelihood: String,
+}
+
+struct Metadata {
+  faceId:String, 
+  fcltId:String,
+  rect: Rect,
+  class: MetadataClass,
+  currentTime:u64,  
+  plateNumberDetecting: bool,
+  plateUuid: String,
+  detectStatus: String,
+  detectType: u32,
+  vehicleType: u32, 
+  // vehicleColor
+}
+
+
 
 pub async fn proc(json:Value,  camera_ip:String, http_port:String, img_save_path:String, face_recognition_url:String) -> Result<(), Error> {
   let meta = json["MetadataStream"]["VideoAnalytics"].clone();
@@ -59,19 +93,20 @@ async fn proc_metadata(metadata:Value, camera_ip:String, http_port:String, img_s
 
   else if metadata_class.contains("Vehicle") {
       
-  }
-  // 자동차 번호판일 때 차량번호 판독 모듈 실행
+  }  
   else if metadata_class.contains("LicensePlate") {
 
   }
   
   let mut save_file_name:String = "".to_string();
-  if let Some(image_ref) = cloned_data["Appearance"].get("ImageRef") {      
-    println!("{}",cloned_data["Appearance"]);
+  if let Some(image_ref) = cloned_data["Appearance"].get("ImageRef") {        
     save_file_name = save_bestshot(img_save_path, camera_ip, http_port, image_ref.to_string().replace("\"", "")).await.unwrap();
-    if metadata_class.contains("Face") {                
-        println!("{}", image_ref);
-        facerecognition::recog(save_file_name, face_recognition_url).await.unwrap();
+    if metadata_class.contains("Face") {
+        let face_result = facerecognition::recog(save_file_name, face_recognition_url).await.unwrap();
+                        
+        if face_result.result.as_array().iter().len() > 0 {
+          println!("json {}",face_result.result[0]["body"]["face_id"]);
+        }
           
             // request::fetch_url("a".to_string(), file_name.to_string()).await.unwrap();            
     }
