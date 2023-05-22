@@ -1,4 +1,4 @@
-use mongodb::{bson::{doc, Bson}, bson, options::IndexOptions, Client, Collection, IndexModel};
+use mongodb::{bson::{doc, Bson}, bson, options::IndexOptions, Client, Collection, IndexModel, options::ClientOptions};
 use serde::{Deserialize, Serialize};
 use futures::TryStreamExt;
 use std::collections::HashMap;
@@ -38,15 +38,14 @@ pub struct FcltData {
 }
 
 impl FcltLib {
-    pub async fn new(mongo_uri: String, db_name: String) -> FcltLib {        
+    pub async fn new(mongo_uri: String, db_name: String) -> FcltLib {              
         let client = Client::with_uri_str(mongo_uri).await.expect("failed to connect");
-        let db = client.database(&db_name);
-        
+        let db = client.database(&db_name);        
         
         FcltLib { db }
     }    
 
-    pub async fn get_fclt(&self) -> Vec<FcltData> {                
+    pub async fn get_fclt(&self) -> Vec<FcltData> {            
         let collection = self.db.collection::<FcltModel>("fclts");
         let response = collection.find(None, None).await.unwrap();
         

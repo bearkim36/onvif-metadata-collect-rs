@@ -12,6 +12,7 @@
         "args": [
           "build",
           "--bin=server",
+          "--verbose",
           "--package=onvif-metadata-rs"
         ],
         "filter": {

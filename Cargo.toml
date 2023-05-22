@@ -35,7 +35,7 @@ features = [
 
 
 [dependencies.mongodb]
-version = "2.3.1"
+version = "2.5.0"
 features = ["tokio-sync"]
 
 [dependencies.uuid]

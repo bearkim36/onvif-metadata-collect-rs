@@ -5,47 +5,40 @@ use uuid::Uuid;
 use std::fs;
 use reqwest::Client; 
 
-
 use crate::server_metadata::facerecognition;
+use crate::server_metadata::metadata;
 
-struct XY{
-  x:u32,
-  y:u32,
-}
-struct Rect {
-  top: u32,
-  bottom: u32,
-  left: u32,
-  right: u32,
-  center: XY,
-  translate: XY,
-}
-
-struct MetadataClass {
-  r#type: String,
-  likelihood: String,
-}
-
-struct Metadata {
-  faceId:String, 
-  fcltId:String,
-  rect: Rect,
-  class: MetadataClass,
-  currentTime:u64,  
-  plateNumberDetecting: bool,
-  plateUuid: String,
-  detectStatus: String,
-  detectType: u32,
-  vehicleType: u32, 
-  // vehicleColor
-}
-
-
-
-pub async fn proc(json:Value,  camera_ip:String, http_port:String, img_save_path:String, face_recognition_url:String) -> Result<(), Error> {
+pub async fn proc(json:Value,  camera_ip:String, http_port:String, img_save_path:String, face_recognition_url:String) -> Result<metadata::Metadata, Error> {
   let meta = json["MetadataStream"]["VideoAnalytics"].clone();
   let date_str:String = meta["Frame"]["UtcTime"].to_string().replace("\"", "");
-             
+  let metadata_result:metadata::Metadata = metadata::Metadata {
+    faceId: "".to_string(),
+    fcltId: "".to_string(),
+    rect: metadata::Rect {
+        top: 0,
+        bottom: 0,
+        left: 0,
+        right: 0,
+        center: metadata::XY {
+            x: 0,
+            y: 0,
+        },
+        translate: metadata::XY {
+          x: 0,
+          y: 0,
+      },
+    },
+    class: metadata::MetadataClass {
+        r#type: "".to_string(),
+        likelihood: "".to_string(),
+    },
+    currentTime: 0,
+    plateNumberDetecting: false,
+    plateUuid: "".to_string(),
+    detectStatus: "".to_string(),
+    detectType: 0,
+    vehicleType: 0,
+};
 
   if date_str != "null" {
       let date = NaiveDateTime::parse_from_str(&date_str, "%Y-%m-%dT%H:%M:%S%.3fZ").unwrap();
@@ -67,7 +60,7 @@ pub async fn proc(json:Value,  camera_ip:String, http_port:String, img_save_path
           }
       }                
   }   
-  Ok(())
+  Ok(metadata_result)
 }
 
 async fn proc_metadata(metadata:Value, camera_ip:String, http_port:String, img_save_path:String, face_recognition_url:String) -> Result<(), Error> {  

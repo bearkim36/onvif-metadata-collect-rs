@@ -26,7 +26,7 @@ mod lpr;
 mod hanwha;
 mod truen;
 mod facerecognition;
-
+mod metadata;
 // use crate::server_metadata;
 
 #[async_trait]
