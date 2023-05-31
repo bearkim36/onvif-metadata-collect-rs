@@ -3,8 +3,6 @@ use chrono::NaiveDateTime;
 use serde_json::Value;
 use uuid::Uuid;
 use std::fs;
-use std::fs::File;
-use std::io::prelude::*;
 
 
 use reqwest::Client; 

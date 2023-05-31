@@ -89,8 +89,8 @@ pub async fn proc(json:Value, camera_ip:String, http_port:String, img_save_path:
     match resp.error_for_status() {
         Ok(_res) => {
             let img_bytes = _res.bytes().await.unwrap();                                                                                        
-            let img = image::load_from_memory(&img_bytes).unwrap();        
-            img.save(file_name).unwrap();                                
+            fs::write(file_name, img_bytes).expect("Unable to write file");
+                                        
         },
         Err(err) => {
             // asserting a 400 as an example
