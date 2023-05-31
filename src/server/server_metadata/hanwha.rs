@@ -3,6 +3,10 @@ use chrono::NaiveDateTime;
 use serde_json::Value;
 use uuid::Uuid;
 use std::fs;
+use std::fs::File;
+use std::io::prelude::*;
+
+
 use reqwest::Client; 
 
 use crate::server_metadata::facerecognition;
@@ -134,8 +138,10 @@ async fn save_bestshot(img_save_path:String, ip:String, http_port:String, image_
   match resp.error_for_status() {
       Ok(_res) => {
           let img_bytes = _res.bytes().await.unwrap();                                                                                        
-          let img = image::load_from_memory(&img_bytes).unwrap();        
-          img.save(file_name).unwrap();                                
+          fs::write(file_name, img_bytes).expect("Unable to write file");
+          
+          // let img = image::load_from_memory(&img_bytes).unwrap();        
+          // img.save(file_name).unwrap();                                
       },
       Err(err) => {
           // asserting a 400 as an example
