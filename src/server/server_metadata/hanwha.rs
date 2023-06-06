@@ -4,7 +4,6 @@ use serde_json::Value;
 use uuid::Uuid;
 use std::fs;
 
-
 use reqwest::Client; 
 
 use crate::server_metadata::facerecognition;
@@ -40,7 +39,7 @@ pub async fn proc(json:Value,  camera_ip:String, http_port:String, img_save_path
     detectStatus: "".to_string(),
     detectType: 0,
     vehicleType: 0,
-};
+  };
 
   if date_str != "null" {
       let date = NaiveDateTime::parse_from_str(&date_str, "%Y-%m-%dT%H:%M:%S%.3fZ").unwrap();
@@ -97,11 +96,11 @@ async fn proc_metadata(metadata:Value, camera_ip:String, http_port:String, img_s
   if let Some(image_ref) = cloned_data["Appearance"].get("ImageRef") {        
     save_file_name = save_bestshot(img_save_path, camera_ip, http_port, image_ref.to_string().replace("\"", "")).await.unwrap();
     if metadata_class.contains("Face") {
-        let face_result = facerecognition::recog(save_file_name, face_recognition_url).await.unwrap();
+        // let face_result = facerecognition::recog(save_file_name, face_recognition_url).await.unwrap();
                         
-        if face_result.result.as_array().iter().len() > 0 {
-          println!("json {}",face_result.result[0]["body"]["face_id"]);
-        }
+        // if face_result.result.as_array().iter().len() > 0 {
+        //   println!("json {}",face_result.result[0]["body"]["face_id"]);
+        // }
           
             // request::fetch_url("a".to_string(), file_name.to_string()).await.unwrap();            
     }
@@ -115,8 +114,8 @@ async fn proc_metadata(metadata:Value, camera_ip:String, http_port:String, img_s
     // 자동차 번호판일 때 차량번호 판독 모듈 실행
     else if metadata_class.contains("LicensePlate") {
     
-    }      
-  }  
+    }              
+  }    
 
   Ok(())
 }

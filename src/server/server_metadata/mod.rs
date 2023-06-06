@@ -1,5 +1,4 @@
 extern crate chrono;
-extern crate image;
 
 use std::sync::{Arc};
 // use std::time::{SystemTime, UNIX_EPOCH};
@@ -15,11 +14,18 @@ use retina::client::{SessionGroup, SetupOptions};
 use async_trait::async_trait;
 // use uuid::Uuid;
 // use lazy_static::lazy_static; 
+
+use serde::{Deserialize, Serialize};
 use serde_json::{Value,json};
 
 // use reqwest::Client; 
 use quickxml_to_serde::{xml_string_to_json, Config,NullValue};
 // use chrono::*;
+
+use rdkafka::config::ClientConfig;
+use rdkafka::producer::{FutureProducer, FutureRecord};
+
+
 
 mod request;
 mod lpr;
@@ -47,17 +53,13 @@ pub struct MetadataConfig {
   pub img_save_path: String,
   pub fclt_id: String,
   pub ai_cam_model: String,
-  pub face_recognition_url: String
+  pub face_recognition_url: String  
 }
 
 #[derive(Clone)]
-#[derive(Debug)]
+#[derive(Serialize, Deserialize ,Debug)]
 pub struct MetadataObject {    
-    pub object_id: String,
-    pub class: String,
-    pub object_array: Value,
-    pub last_time: i64,
-    pub cross_line: Vec<String>,
+    pub object_id: String,    
 }
 
 // lazy_static! {
@@ -66,7 +68,17 @@ pub struct MetadataObject {
 
 #[async_trait]
 impl MetadataManager for MetadataConfig {  
-  async fn run_onvif(&self) -> Result<(), Error> {    
+  async fn run_onvif(&self) -> Result<(), Error> {        
+
+    let producer: &FutureProducer = &ClientConfig::new()
+    .set("bootstrap.servers", "192.168.0.223:9092")
+    .set("message.timeout.ms", "5000")
+    .set("security.protocol", "plaintext")
+    // .set("bootstrap.servers", "192.168.0.223:9093")
+    // .set("bootstrap.servers", "192.168.0.223:9094")
+    .create()
+    .expect("Producer creation error");
+
     let mut rtsp_url = "".to_string();
     if self.ai_cam_model.contains("hanwha") {
         rtsp_url = std::format!("rtsp://{}:{}/profile1/media.smp", self.camera_ip, self.rtsp_port);
@@ -107,8 +119,10 @@ impl MetadataManager for MetadataConfig {
         .await?
         .demuxed()?;
 
+    let mut i = 0;
     
     loop {
+        i += 1;
         tokio::select! {
             item = session.next() => {
                 match item.ok_or_else(|| anyhow!("EOF"))?? {
@@ -116,14 +130,52 @@ impl MetadataManager for MetadataConfig {
                         //println!("{}", std::str::from_utf8(m.data()).unwrap());
                         let conf = Config::new_with_custom_values(true, "", "txt", NullValue::Null);
                         let json = xml_string_to_json(std::str::from_utf8(m.data()).unwrap().to_string(), &conf).unwrap();
-        
+                        let mut metadata_object = metadata::Metadata {
+                            faceId: "".to_string(),
+                            fcltId: "".to_string(),
+                            rect: metadata::Rect {
+                                top: 0,
+                                bottom: 0,
+                                left: 0,
+                                right: 0,
+                                center: metadata::XY {
+                                    x: 0,
+                                    y: 0,
+                                },
+                                translate: metadata::XY {
+                                  x: 0,
+                                  y: 0,
+                              },
+                            },
+                            class: metadata::MetadataClass {
+                                r#type: "".to_string(),
+                                likelihood: "".to_string(),
+                            },
+                            currentTime: 0,
+                            plateNumberDetecting: false,
+                            plateUuid: "".to_string(),
+                            detectStatus: "".to_string(),
+                            detectType: 0,
+                            vehicleType: 0,
+                        }; 
+
                         if self.ai_cam_model.contains("hanwha") {
-                            hanwha::proc(json, self.camera_ip.clone(), self.http_port.clone(), self.img_save_path.clone(), self.face_recognition_url.clone()).await.unwrap();
+                            metadata_object = hanwha::proc(json, self.camera_ip.clone(), self.http_port.clone(), self.img_save_path.clone(), self.face_recognition_url.clone()).await.unwrap();
                         }
                         else if self.ai_cam_model.contains("truen") {
-                            truen::proc(json, self.camera_ip.clone(), self.http_port.clone(), self.img_save_path.clone(), self.face_recognition_url.clone()).await.unwrap();
+                            metadata_object = truen::proc(json, self.camera_ip.clone(), self.http_port.clone(), self.img_save_path.clone(), self.face_recognition_url.clone()).await.unwrap();
                         }
+                        metadata_object.fcltId = i.to_string();
+                        
 
+                        let metadata_object_buffer = serde_json::to_string(&metadata_object).expect("json serialazation failed");
+
+                        producer.send(
+                            FutureRecord::to("metadata")
+                                .key("test")
+                                .payload(&metadata_object_buffer),
+                                std::time::Duration::from_secs(0)
+                        ).await.unwrap();
                     },
                     _ => continue,
                 };

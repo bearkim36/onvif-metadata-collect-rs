@@ -1,8 +1,12 @@
+use serde::{Deserialize, Serialize};
 
+#[derive(Serialize, Deserialize ,Debug, Clone)]
 pub struct XY{
   pub x:u32,
   pub y:u32,
 }
+
+#[derive(Serialize, Deserialize ,Debug, Clone)]
 pub struct Rect {
   pub top: u32,
   pub bottom: u32,
@@ -12,11 +16,13 @@ pub struct Rect {
   pub translate: XY,
 }
 
+#[derive(Serialize, Deserialize ,Debug, Clone)]
 pub struct MetadataClass {
   pub r#type: String,
   pub likelihood: String,
 }
 
+#[derive(Serialize, Deserialize ,Debug, Clone)]
 pub struct Metadata {
   pub faceId:String, 
   pub fcltId:String,
