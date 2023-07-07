@@ -37,7 +37,7 @@ mod metadata;
 
 #[async_trait]
 pub trait MetadataManager {
-  async fn run_onvif(&self) -> Result<(), Error> ;   
+  async fn run_onvif(&self, producer:FutureProducer) -> Result<(), Error> ;   
 //   async fn hanwha_proc(&self, json:Value) -> Result<(), Error> ;
 //   async fn truen_proc(&self, json:Value) -> Result<(), Error>;
 //   async fn save_bestshot(img_save_path:String, ip:String, image_ref:String) -> Result<(), Error>;
@@ -68,17 +68,8 @@ pub struct MetadataObject {
 
 #[async_trait]
 impl MetadataManager for MetadataConfig {  
-  async fn run_onvif(&self) -> Result<(), Error> {        
-
-    let producer: &FutureProducer = &ClientConfig::new()
-    .set("bootstrap.servers", "192.168.0.223:9092")
-    .set("message.timeout.ms", "5000")
-    .set("security.protocol", "plaintext")
-    // .set("bootstrap.servers", "192.168.0.223:9093")
-    // .set("bootstrap.servers", "192.168.0.223:9094")
-    .create()
-    .expect("Producer creation error");
-
+  async fn run_onvif(&self, producer:FutureProducer) -> Result<(), Error> {        
+  
     let mut rtsp_url = "".to_string();
     if self.ai_cam_model.contains("hanwha") {
         rtsp_url = std::format!("rtsp://{}:{}/profile1/media.smp", self.camera_ip, self.rtsp_port);
@@ -172,7 +163,7 @@ impl MetadataManager for MetadataConfig {
 
                         producer.send(
                             FutureRecord::to("metadata")
-                                .key("test")
+                                .key(&i.to_string())
                                 .payload(&metadata_object_buffer),
                                 std::time::Duration::from_secs(0)
                         ).await.unwrap();

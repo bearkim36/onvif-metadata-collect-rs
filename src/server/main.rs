@@ -7,15 +7,25 @@
 use std::{thread, time, env};
 use anyhow::{anyhow, Error};
 
+use rdkafka::config::ClientConfig;
+use rdkafka::producer::{FutureProducer, FutureRecord};
+
+
 mod server_metadata;
 mod fclt;
 mod util;
 
 extern crate dotenv;
 
+
+
 async fn server_mode() -> Result<(), Error> {
     let mongo_uri = env::var("MONGO_URI").unwrap();
     let mongo_db_name = env::var("MONGO_DB_NAME").unwrap();
+    let kafka_broker_1 = env::var("KAFKA_SERVER_BROKER_IP1").unwrap();
+    let kafka_broker_2 = env::var("KAFKA_SERVER_BROKER_IP2").unwrap();
+    let kafka_broker_3 = env::var("KAFKA_SERVER_BROKER_IP3").unwrap();
+
     println!("MONGO_URI: {}", mongo_uri);
     println!("MONGO_DB_NAME: {}", mongo_db_name);
 
@@ -24,10 +34,20 @@ async fn server_mode() -> Result<(), Error> {
     let fclt_obj = fclt::FcltLib::new(mongo_uri, mongo_db_name).await;
     let fclt_data = fclt_obj.get_fclt().await;
 
+    let mut producer: &FutureProducer = &ClientConfig::new()
+    .set("bootstrap.servers", kafka_broker_1)
+    .set("bootstrap.servers", kafka_broker_2)
+    .set("bootstrap.servers", kafka_broker_3)
+    .set("message.timeout.ms", "5000")
+    .set("security.protocol", "plaintext")
+    .create()
+    .expect("Producer creation error");
+
 
     let threads: Vec<_> = (0..fclt_data.len())
         .map(|i| {                       
             let fd = fclt_data.to_owned();
+            let p = producer.to_owned();
             tokio::spawn(async move {                                
                 // let rtsp_url = env::var("RTSP_URL").unwrap();
                 // let rtsp_id = env::var("RTSP_ID").unwrap();
@@ -62,7 +82,7 @@ async fn server_mode() -> Result<(), Error> {
                     }
 
                     println!("{} Start ONVIF session", i);
-                    server_metadata::MetadataManager::run_onvif(&metadata).await;
+                    server_metadata::MetadataManager::run_onvif(&metadata, p.clone()).await;
                     
                     thread::sleep(time::Duration::from_secs(5));
                 }

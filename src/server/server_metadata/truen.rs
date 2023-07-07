@@ -108,7 +108,6 @@ pub async fn proc(json:Value, camera_ip:String, http_port:String, img_save_path:
     let file_path = format!("{}/{}",img_save_path, ip);
     let file_name = format!("{}/{:?}.jpg", file_path.clone(), Uuid::new_v4());
     let return_file_name = file_name.to_owned();
-    // tokio::spawn(async move {        
 
     fs::create_dir_all(file_path.clone()).unwrap();        
     let url = format!("{}", image_ref);
@@ -119,12 +118,9 @@ pub async fn proc(json:Value, camera_ip:String, http_port:String, img_save_path:
     match resp.error_for_status() {
         Ok(_res) => {
             let img_bytes = _res.bytes().await.unwrap();                                                                                        
-            fs::write(file_name, img_bytes).expect("Unable to write file");
-                                        
+            fs::write(file_name, img_bytes).expect("Unable to write file");                                        
         },
         Err(err) => {
-            // asserting a 400 as an example
-            // it could be any status between 400...599
             assert_eq!(
                 err.status(),
                 Some(reqwest::StatusCode::BAD_REQUEST)

@@ -123,8 +123,7 @@ async fn proc_metadata(metadata:Value, camera_ip:String, http_port:String, img_s
 async fn save_bestshot(img_save_path:String, ip:String, http_port:String, image_ref:String) -> Result<String, Error> {
   let file_path = format!("{}/{}",img_save_path, ip);
   let file_name = format!("{}/{:?}.jpg", file_path.clone(), Uuid::new_v4());
-  let return_file_name = file_name.to_owned();
-  // tokio::spawn(async move {        
+  let return_file_name = file_name.to_owned();   
 
   fs::create_dir_all(file_path.clone()).unwrap();        
   let url = format!("http://{}:{}{}", ip, http_port, image_ref);
@@ -135,14 +134,9 @@ async fn save_bestshot(img_save_path:String, ip:String, http_port:String, image_
   match resp.error_for_status() {
       Ok(_res) => {
           let img_bytes = _res.bytes().await.unwrap();                                                                                        
-          fs::write(file_name, img_bytes).expect("Unable to write file");
-          
-          // let img = image::load_from_memory(&img_bytes).unwrap();        
-          // img.save(file_name).unwrap();                                
+          fs::write(file_name, img_bytes).expect("Unable to write file");                               
       },
       Err(err) => {
-          // asserting a 400 as an example
-          // it could be any status between 400...599
           assert_eq!(
               err.status(),
               Some(reqwest::StatusCode::BAD_REQUEST)
