@@ -82,7 +82,7 @@ async fn server_mode() -> Result<(), Error> {
                     }
 
                     println!("{} Start ONVIF session", i);
-                    server_metadata::MetadataManager::run_onvif(&metadata, p.clone()).await;
+                    server_metadata::MetadataManager::run_onvif(&metadata, p.clone()).await.unwrap();
                     
                     thread::sleep(time::Duration::from_secs(5));
                 }
@@ -106,7 +106,7 @@ async fn main() {
     dotenv::from_filename(path).expect("Failed to open directory");
 
     println!("Boot on Server Mode");
-    server_mode().await;        
+    server_mode().await.unwrap();        
 
 }
 

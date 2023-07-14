@@ -96,6 +96,7 @@ async fn proc_metadata(metadata:Value, camera_ip:String, http_port:String, img_s
   if let Some(image_ref) = cloned_data["Appearance"].get("ImageRef") {        
     save_file_name = save_bestshot(img_save_path, camera_ip, http_port, image_ref.to_string().replace("\"", "")).await.unwrap();
     if metadata_class.contains("Face") {
+      
         // let face_result = facerecognition::recog(save_file_name, face_recognition_url).await.unwrap();
                         
         // if face_result.result.as_array().iter().len() > 0 {
@@ -103,6 +104,7 @@ async fn proc_metadata(metadata:Value, camera_ip:String, http_port:String, img_s
         // }
           
             // request::fetch_url("a".to_string(), file_name.to_string()).await.unwrap();            
+          
     }
     else if metadata_class.contains("Human") {
       
@@ -134,7 +136,9 @@ async fn save_bestshot(img_save_path:String, ip:String, http_port:String, image_
   match resp.error_for_status() {
       Ok(_res) => {
           let img_bytes = _res.bytes().await.unwrap();                                                                                        
-          fs::write(file_name, img_bytes).expect("Unable to write file");                               
+          tokio::spawn(async move {                
+            fs::write(file_name, img_bytes).expect("Unable to write file");                               
+          });
       },
       Err(err) => {
           assert_eq!(

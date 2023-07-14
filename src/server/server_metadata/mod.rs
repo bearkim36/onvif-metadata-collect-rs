@@ -16,13 +16,11 @@ use async_trait::async_trait;
 // use lazy_static::lazy_static; 
 
 use serde::{Deserialize, Serialize};
-use serde_json::{Value,json};
 
 // use reqwest::Client; 
 use quickxml_to_serde::{xml_string_to_json, Config,NullValue};
 // use chrono::*;
 
-use rdkafka::config::ClientConfig;
 use rdkafka::producer::{FutureProducer, FutureRecord};
 
 
@@ -173,8 +171,7 @@ impl MetadataManager for MetadataConfig {
             },
            
         }   
-    }
- 
+    }     
   }
 
 
