@@ -37,10 +37,6 @@ mod bestshot;
 #[async_trait]
 pub trait MetadataManager {
   async fn run_onvif(&self, producer:FutureProducer) -> Result<(), Error> ;   
-//   async fn hanwha_proc(&self, json:Value) -> Result<(), Error> ;
-//   async fn truen_proc(&self, json:Value) -> Result<(), Error>;
-//   async fn save_bestshot(img_save_path:String, ip:String, image_ref:String) -> Result<(), Error>;
-//   async fn save_truen_bestshot(img_save_path:String, ip:String, image_ref:String) -> Result<(), Error>;
 }
 
 pub struct MetadataConfig {  
@@ -61,9 +57,6 @@ pub struct MetadataObject {
     pub object_id: String,    
 }
 
-// lazy_static! {
-//     static ref METADATA_MAP: Arc<Mutex<HashMap<u64, MetadataObject<>>>> = Arc::new(Mutex::new(HashMap::new()));
-// }
 
 #[async_trait]
 impl MetadataManager for MetadataConfig {  
@@ -120,34 +113,7 @@ impl MetadataManager for MetadataConfig {
                         //println!("{}", std::str::from_utf8(m.data()).unwrap());
                         let conf = Config::new_with_custom_values(true, "", "txt", NullValue::Null);
                         let json = xml_string_to_json(std::str::from_utf8(m.data()).unwrap().to_string(), &conf).unwrap();
-                        let mut metadata_object = metadata::Metadata {
-                            faceId: "".to_string(),
-                            fcltId: "".to_string(),
-                            rect: metadata::Rect {
-                                top: 0,
-                                bottom: 0,
-                                left: 0,
-                                right: 0,
-                                center: metadata::XY {
-                                    x: 0,
-                                    y: 0,
-                                },
-                                translate: metadata::XY {
-                                  x: 0,
-                                  y: 0,
-                              },
-                            },
-                            class: metadata::MetadataClass {
-                                r#type: "".to_string(),
-                                likelihood: "".to_string(),
-                            },
-                            currentTime: 0,
-                            plateNumberDetecting: false,
-                            plateUuid: "".to_string(),
-                            detectStatus: "".to_string(),
-                            detectType: 0,
-                            vehicleType: 0,
-                        }; 
+                        let mut metadata_object = metadata::Metadata::new();
                         
                         if self.ai_cam_model.contains("hanwha") {
                             metadata_object = hanwha::proc(json, producer.clone(), self.fclt_id.clone(), self.camera_ip.clone(), self.http_port.clone(), self.img_save_path.clone(), self.face_recognition_url.clone()).await.unwrap();
@@ -156,10 +122,6 @@ impl MetadataManager for MetadataConfig {
                             metadata_object = truen::proc(json, producer.clone(), self.fclt_id.clone(), self.camera_ip.clone(), self.http_port.clone(), self.img_save_path.clone(), self.face_recognition_url.clone()).await.unwrap();
                         }
                         metadata_object.fcltId = self.fclt_id.to_string();
-                        
-                     
-                        
-
 
                         let metadata_object_buffer = serde_json::to_string(&metadata_object).expect("json serialazation failed");
 
@@ -177,24 +139,6 @@ impl MetadataManager for MetadataConfig {
         }   
     }     
   }
-
-
-//   fn clear_data() {    
-//     tokio::spawn(async move {                
-//         let clone2 = Arc::clone(&METADATA_MAP);
-//       //  println!("{}", clone2.lock().await.len());        
-//         let mut keys:Vec<u64> = Vec::new();
-//         let current_time = Utc::now().timestamp_millis();
-//         for (k, v) in METADATA_MAP.lock().await.iter() {
-//             if (current_time - v.last_time) > 15000 {
-//                 keys.push(*k);
-//             }
-//         }        
-//         for k in keys {
-//             clone2.lock().await.remove(&k);
-//         }                                      
-//     });            
-//   }
   
 }
 

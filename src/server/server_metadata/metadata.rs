@@ -36,3 +36,36 @@ pub struct Metadata {
   pub vehicleType: u32, 
   // vehicleColor
 }
+
+impl Metadata {
+  pub fn new() -> Metadata {
+    Metadata {       
+        faceId: "".to_string(),
+        fcltId: "".to_string(),
+        rect: Rect {
+            top: 0,
+            bottom: 0,
+            left: 0,
+            right: 0,
+            center: XY {
+                x: 0,
+                y: 0,
+            },
+            translate: XY {
+              x: 0,
+              y: 0,
+          },
+        },
+        class: MetadataClass {
+            r#type: "".to_string(),
+            likelihood: "".to_string(),
+        },
+        currentTime: 0,
+        plateNumberDetecting: false,
+        plateUuid: "".to_string(),
+        detectStatus: "".to_string(),
+        detectType: 0,
+        vehicleType: 0,
+    }     
+  }
+}

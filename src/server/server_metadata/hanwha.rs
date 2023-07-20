@@ -6,41 +6,13 @@ use std::fs;
 use rdkafka::producer::{FutureProducer, FutureRecord};
 use reqwest::Client; 
 
-use crate::server_metadata::facerecognition;
 use crate::server_metadata::metadata;
 use crate::server_metadata::bestshot;
 
 pub async fn proc(json:Value, producer:FutureProducer, fclt_id:String, camera_ip:String, http_port:String, img_save_path:String, face_recognition_url:String) -> Result<metadata::Metadata, Error> {
   let meta = json["MetadataStream"]["VideoAnalytics"].clone();
   let date_str:String = meta["Frame"]["UtcTime"].to_string().replace("\"", "");
-  let metadata_result:metadata::Metadata = metadata::Metadata {
-    faceId: "".to_string(),
-    fcltId: "".to_string(),
-    rect: metadata::Rect {
-        top: 0,
-        bottom: 0,
-        left: 0,
-        right: 0,
-        center: metadata::XY {
-            x: 0,
-            y: 0,
-        },
-        translate: metadata::XY {
-          x: 0,
-          y: 0,
-      },
-    },
-    class: metadata::MetadataClass {
-        r#type: "".to_string(),
-        likelihood: "".to_string(),
-    },
-    currentTime: 0,
-    plateNumberDetecting: false,
-    plateUuid: "".to_string(),
-    detectStatus: "".to_string(),
-    detectType: 0,
-    vehicleType: 0,
-  };
+  let metadata_result:metadata::Metadata = metadata::Metadata::new();
 
   if date_str != "null" {
       let date = NaiveDateTime::parse_from_str(&date_str, "%Y-%m-%dT%H:%M:%S%.3fZ").unwrap();
@@ -93,7 +65,6 @@ async fn proc_metadata(metadata:Value,  producer:FutureProducer, fclt_id:String,
 
   }
   
-  let mut save_file_name:String = "".to_string();
   if let Some(image_ref) = cloned_data["Appearance"].get("ImageRef") {        
     let bestshot = bestshot::Bestshot {
       fclt_id,
@@ -110,33 +81,8 @@ async fn proc_metadata(metadata:Value,  producer:FutureProducer, fclt_id:String,
           .key(&object_id.to_string())
           .payload(&bestshot_buffer),
           std::time::Duration::from_secs(0)
-    ).await.unwrap();
-
-    //save_file_name = save_bestshot(img_save_path, camera_ip, http_port, image_ref.to_string().replace("\"", "")).await.unwrap();
-    if metadata_class.contains("Face") {
-      
-        // let face_result = facerecognition::recog(save_file_name, face_recognition_url).await.unwrap();
-                        
-        // if face_result.result.as_array().iter().len() > 0 {
-        //   println!("json {}",face_result.result[0]["body"]["face_id"]);
-        // }
-          
-            // request::fetch_url("a".to_string(), file_name.to_string()).await.unwrap();            
-          
-    }
-    else if metadata_class.contains("Human") {
-      
-    }
-  
-    else if metadata_class.contains("Vehicle") {
-        
-    }
-    // 자동차 번호판일 때 차량번호 판독 모듈 실행
-    else if metadata_class.contains("LicensePlate") {
-    
-    }              
-  }    
-
+    ).await.unwrap();         
+  }
   Ok(())
 }
 
