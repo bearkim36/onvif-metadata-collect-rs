@@ -31,6 +31,7 @@ mod hanwha;
 mod truen;
 mod facerecognition;
 mod metadata;
+mod bestshot;
 // use crate::server_metadata;
 
 #[async_trait]
@@ -147,15 +148,18 @@ impl MetadataManager for MetadataConfig {
                             detectType: 0,
                             vehicleType: 0,
                         }; 
-
+                        
                         if self.ai_cam_model.contains("hanwha") {
-                            metadata_object = hanwha::proc(json, self.camera_ip.clone(), self.http_port.clone(), self.img_save_path.clone(), self.face_recognition_url.clone()).await.unwrap();
+                            metadata_object = hanwha::proc(json, producer.clone(), self.fclt_id.clone(), self.camera_ip.clone(), self.http_port.clone(), self.img_save_path.clone(), self.face_recognition_url.clone()).await.unwrap();
                         }
                         else if self.ai_cam_model.contains("truen") {
-                            metadata_object = truen::proc(json, self.camera_ip.clone(), self.http_port.clone(), self.img_save_path.clone(), self.face_recognition_url.clone()).await.unwrap();
+                            metadata_object = truen::proc(json, producer.clone(), self.fclt_id.clone(), self.camera_ip.clone(), self.http_port.clone(), self.img_save_path.clone(), self.face_recognition_url.clone()).await.unwrap();
                         }
-                        metadata_object.fcltId = i.to_string();
+                        metadata_object.fcltId = self.fclt_id.to_string();
                         
+                     
+                        
+
 
                         let metadata_object_buffer = serde_json::to_string(&metadata_object).expect("json serialazation failed");
 

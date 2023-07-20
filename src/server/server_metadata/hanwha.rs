@@ -3,13 +3,14 @@ use chrono::NaiveDateTime;
 use serde_json::Value;
 use uuid::Uuid;
 use std::fs;
-
+use rdkafka::producer::{FutureProducer, FutureRecord};
 use reqwest::Client; 
 
 use crate::server_metadata::facerecognition;
 use crate::server_metadata::metadata;
+use crate::server_metadata::bestshot;
 
-pub async fn proc(json:Value,  camera_ip:String, http_port:String, img_save_path:String, face_recognition_url:String) -> Result<metadata::Metadata, Error> {
+pub async fn proc(json:Value, producer:FutureProducer, fclt_id:String, camera_ip:String, http_port:String, img_save_path:String, face_recognition_url:String) -> Result<metadata::Metadata, Error> {
   let meta = json["MetadataStream"]["VideoAnalytics"].clone();
   let date_str:String = meta["Frame"]["UtcTime"].to_string().replace("\"", "");
   let metadata_result:metadata::Metadata = metadata::Metadata {
@@ -47,7 +48,7 @@ pub async fn proc(json:Value,  camera_ip:String, http_port:String, img_save_path
       if meta["Frame"]["Object"].as_array().iter().len() == 0 {            
           let cloned_data = meta["Frame"]["Object"].clone();
           if !cloned_data.is_null() {                                
-            proc_metadata(cloned_data, camera_ip, http_port, img_save_path, face_recognition_url).await.unwrap();
+            proc_metadata(cloned_data, producer, fclt_id, date_str, camera_ip, http_port, img_save_path, face_recognition_url).await.unwrap();
           }                
          
       }
@@ -56,7 +57,7 @@ pub async fn proc(json:Value,  camera_ip:String, http_port:String, img_save_path
           for objects in meta["Frame"]["Object"].as_array().into_iter() {
               for obj in objects.iter() {
                   let cloned_data = obj.clone();
-                  proc_metadata(cloned_data,  camera_ip.clone(), http_port.clone(), img_save_path.clone(), face_recognition_url.clone()).await.unwrap();
+                  proc_metadata(cloned_data, producer.clone(), fclt_id.clone(), date_str.clone(), camera_ip.clone(), http_port.clone(), img_save_path.clone(), face_recognition_url.clone()).await.unwrap();
               }
           }
       }                
@@ -64,7 +65,7 @@ pub async fn proc(json:Value,  camera_ip:String, http_port:String, img_save_path
   Ok(metadata_result)
 }
 
-async fn proc_metadata(metadata:Value, camera_ip:String, http_port:String, img_save_path:String, face_recognition_url:String) -> Result<(), Error> {  
+async fn proc_metadata(metadata:Value,  producer:FutureProducer, fclt_id:String, utc_time:String, camera_ip:String, http_port:String, img_save_path:String, face_recognition_url:String) -> Result<(), Error> {  
   let cloned_data = metadata.clone();  
   let object_id = cloned_data["ObjectId"].clone();
 
@@ -94,7 +95,24 @@ async fn proc_metadata(metadata:Value, camera_ip:String, http_port:String, img_s
   
   let mut save_file_name:String = "".to_string();
   if let Some(image_ref) = cloned_data["Appearance"].get("ImageRef") {        
-    save_file_name = save_bestshot(img_save_path, camera_ip, http_port, image_ref.to_string().replace("\"", "")).await.unwrap();
+    let bestshot = bestshot::Bestshot {
+      fclt_id,
+      image_ref: image_ref.to_string().replace("\"", ""),
+      object_id: object_id.to_string(),
+      camera_ip: camera_ip.to_string(),
+      http_port: http_port.to_string(),
+      utc_time,
+      class: metadata_class.to_string().replace("\"", "")
+    };
+    let bestshot_buffer = serde_json::to_string(&bestshot).expect("json serialazation failed");
+    producer.send(
+      FutureRecord::to("bestshot")
+          .key(&object_id.to_string())
+          .payload(&bestshot_buffer),
+          std::time::Duration::from_secs(0)
+    ).await.unwrap();
+
+    //save_file_name = save_bestshot(img_save_path, camera_ip, http_port, image_ref.to_string().replace("\"", "")).await.unwrap();
     if metadata_class.contains("Face") {
       
         // let face_result = facerecognition::recog(save_file_name, face_recognition_url).await.unwrap();

@@ -4,12 +4,14 @@ use chrono::NaiveDateTime;
 use serde_json::Value;
 use uuid::Uuid;
 use std::fs;
+use rdkafka::producer::{FutureProducer, FutureRecord};
 use reqwest::Client; 
 
 use crate::server_metadata::metadata;
+use crate::server_metadata::bestshot;
 use crate::server_metadata::facerecognition;
 
-pub async fn proc(json:Value, camera_ip:String, http_port:String, img_save_path:String, face_recognition_url:String) -> Result<metadata::Metadata, Error> {
+pub async fn proc(json:Value, producer:FutureProducer, fclt_id:String, camera_ip:String, http_port:String, img_save_path:String, face_recognition_url:String) -> Result<metadata::Metadata, Error> {
     let meta = json["MetaDataStream"]["VideoAnalytics"].clone();
     let date_str:String = meta["Frame"]["UtcTime"].to_string().replace("\"", "");
     let metadata_result:metadata::Metadata = metadata::Metadata {
@@ -48,7 +50,7 @@ pub async fn proc(json:Value, camera_ip:String, http_port:String, img_save_path:
             let cloned_data = meta["Frame"]["Object"].clone();
 
             if !cloned_data.is_null() {                                
-                proc_metadata(cloned_data, camera_ip, http_port, img_save_path, face_recognition_url).await.unwrap();
+                proc_metadata(cloned_data, producer, fclt_id, date_str,  camera_ip, http_port, img_save_path, face_recognition_url).await.unwrap();
             }                
            
         }
@@ -57,7 +59,7 @@ pub async fn proc(json:Value, camera_ip:String, http_port:String, img_save_path:
             for objects in meta["Frame"]["Object"].as_array().into_iter() {
                 for obj in objects.iter() {
                     let cloned_data = obj.clone();
-                    proc_metadata(cloned_data, camera_ip.clone(), http_port.clone(), img_save_path.clone(), face_recognition_url.clone()).await.unwrap();         
+                    proc_metadata(cloned_data, producer.clone(), fclt_id.clone(), date_str.clone(), camera_ip.clone(), http_port.clone(), img_save_path.clone(), face_recognition_url.clone()).await.unwrap();         
                 }
             }
         }   
@@ -65,7 +67,7 @@ pub async fn proc(json:Value, camera_ip:String, http_port:String, img_save_path:
     Ok(metadata_result)
   }
 
-  async fn proc_metadata(metadata:Value, camera_ip:String, http_port:String, img_save_path:String, face_recognition_url:String) -> Result<(), Error> {
+  async fn proc_metadata(metadata:Value, producer:FutureProducer, utc_time:String, fclt_id:String, camera_ip:String, http_port:String, img_save_path:String, face_recognition_url:String) -> Result<(), Error> {
     let cloned_data = metadata.clone();
     let object_id = cloned_data["ObjectId"].clone();
     // let mut metadata_object = MetadataObject{
@@ -79,14 +81,31 @@ pub async fn proc(json:Value, camera_ip:String, http_port:String, img_save_path:
     let mut save_file_name:String = "".to_string();
     let metadata_class = cloned_data["Appearance"]["Class"]["Type"]["txt"].to_string();
     if let Some(image_ref) = cloned_data["Appearance"].get("ImageRef") {
-        save_file_name = save_bestshot(img_save_path, camera_ip, image_ref.to_string().replace("\"", "")).await.unwrap();
+        let bestshot = bestshot::Bestshot {
+            fclt_id,
+            image_ref: image_ref.to_string().replace("\"", ""),
+            object_id: object_id.to_string(),
+            camera_ip: camera_ip.to_string(),
+            http_port: http_port.to_string(),
+            utc_time,
+            class: metadata_class.to_string().replace("\"", "")
+          };
+          let bestshot_buffer = serde_json::to_string(&bestshot).expect("json serialazation failed");
+          producer.send(
+            FutureRecord::to("bestshot")
+                .key(&object_id.to_string())
+                .payload(&bestshot_buffer),
+                std::time::Duration::from_secs(0)
+          ).await.unwrap();
+
+        // save_file_name = save_bestshot(img_save_path, camera_ip, image_ref.to_string().replace("\"", "")).await.unwrap();
     }
     // 얼굴일 때 안면 분석 쓰레드 돌림
     if metadata_class.contains("Head") {
-        if !cloned_data["Appearance"]["ImageRef"].is_null() {
-            facerecognition::recog(save_file_name, face_recognition_url).await.unwrap();
-            // request::fetch_url("a".to_string(), file_name.to_string()).await.unwrap();
-        }
+        // if !cloned_data["Appearance"]["ImageRef"].is_null() {
+        //     facerecognition::recog(save_file_name, face_recognition_url).await.unwrap();
+        //     // request::fetch_url("a".to_string(), file_name.to_string()).await.unwrap();
+        // }
     }
     else if metadata_class.contains("Human") {
     
