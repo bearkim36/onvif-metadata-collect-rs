@@ -22,7 +22,7 @@ pub async fn proc(json:Value, producer:FutureProducer, fclt_id:String, camera_ip
             let cloned_data = meta["Frame"]["Object"].clone();
 
             if !cloned_data.is_null() {                                
-                proc_metadata(cloned_data, producer, fclt_id, date_str,  camera_ip, http_port, img_save_path, face_recognition_url).await.unwrap();
+                proc_metadata(cloned_data, producer, fclt_id, date_str,  camera_ip, http_port).await.unwrap();
             }                
            
         }
@@ -31,7 +31,7 @@ pub async fn proc(json:Value, producer:FutureProducer, fclt_id:String, camera_ip
             for objects in meta["Frame"]["Object"].as_array().into_iter() {
                 for obj in objects.iter() {
                     let cloned_data = obj.clone();
-                    proc_metadata(cloned_data, producer.clone(), fclt_id.clone(), date_str.clone(), camera_ip.clone(), http_port.clone(), img_save_path.clone(), face_recognition_url.clone()).await.unwrap();         
+                    proc_metadata(cloned_data, producer.clone(), fclt_id.clone(), date_str.clone(), camera_ip.clone(), http_port.clone()).await.unwrap();         
                 }
             }
         }   
@@ -39,7 +39,7 @@ pub async fn proc(json:Value, producer:FutureProducer, fclt_id:String, camera_ip
     Ok(metadata_result)
   }
 
-  async fn proc_metadata(metadata:Value, producer:FutureProducer, utc_time:String, fclt_id:String, camera_ip:String, http_port:String, img_save_path:String, face_recognition_url:String) -> Result<(), Error> {
+  async fn proc_metadata(metadata:Value, producer:FutureProducer, utc_time:String, fclt_id:String, camera_ip:String, http_port:String) -> Result<(), Error> {
     let cloned_data = metadata.clone();
     let object_id = cloned_data["ObjectId"].clone();
     // let mut metadata_object = MetadataObject{
