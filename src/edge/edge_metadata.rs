@@ -1,10 +1,10 @@
 extern crate chrono;
 
 use std::env;
-use std::thread;
-use std::sync::{Arc};
+
+use std::sync::Arc;
 use futures::StreamExt;
-use url::{Url};
+use url::Url;
 use anyhow::{anyhow, Error};
 
 use retina::codec::CodecItem;
@@ -77,9 +77,9 @@ impl MetadataManager for Metadata {
                         let json = xml_string_to_json(std::str::from_utf8(m.data()).unwrap().to_string(), &conf).unwrap();
                         let param = json.to_string();
                         let analysis_url = env::var("ANALYSIS_SERVER_URL").unwrap();
-                        let sub_thread = task::spawn( async  {   
+                        let _sub_thread = task::spawn( async  {   
                             let client = reqwest::Client::new();
-                            let res = client.post(analysis_url)
+                            let _res = client.post(analysis_url)
                                 .header("content-type", "application/json")
                                 .body(param)
                                 .send()

@@ -49,7 +49,7 @@ async fn main() {
     dotenv::from_filename(path).expect("Failed to open directory");
 
     println!("Boot on Edge device Mode");
-    edge_device_mode().await;        
+    edge_device_mode().await.unwrap();        
     
 }
 
