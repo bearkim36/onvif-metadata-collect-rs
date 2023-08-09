@@ -17,7 +17,7 @@ use quickxml_to_serde::{xml_string_to_json, Config,NullValue};
 
 #[async_trait]
 pub trait MetadataManager {
-  async fn run_onvif(&self) -> Result<(), Error> ;   
+  async fn run_onvif(&self, analysis_url:String) -> Result<(), Error> ;   
 
 }
 
@@ -27,11 +27,11 @@ pub struct Metadata {
   pub password: String,
 }
 
-use crate::edge_metadata;
+// use crate::edge_metadata;
 
 #[async_trait]
 impl MetadataManager for Metadata {  
-  async fn run_onvif(&self) -> Result<(), Error> {
+  async fn run_onvif(&self, analysis_url_origin:String) -> Result<(), Error> {
 
     println!("onvif url: {}", self.url.clone());
     println!("onvif id/pw {}/{}", self.username.clone(), self.password.clone());    
@@ -75,8 +75,8 @@ impl MetadataManager for Metadata {
                         //println!("{}", std::str::from_utf8(m.data()).unwrap());
                         let conf = Config::new_with_custom_values(true, "", "txt", NullValue::Null);
                         let json = xml_string_to_json(std::str::from_utf8(m.data()).unwrap().to_string(), &conf).unwrap();
-                        let param = json.to_string();
-                        let analysis_url = env::var("ANALYSIS_SERVER_URL").unwrap();
+                        let param = json.to_string();                        
+                        let analysis_url = analysis_url_origin.clone();
                         let _sub_thread = task::spawn( async  {   
                             let client = reqwest::Client::new();
                             let _res = client.post(analysis_url)

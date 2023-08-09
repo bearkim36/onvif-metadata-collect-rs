@@ -29,9 +29,9 @@
       "name": "Debug unit tests in executable 'edge'",
       "cargo": {
         "args": [
-          "test",
-          "--no-run",
+          "build",
           "--bin=edge",
+          "--verbose",
           "--package=onvif-metadata-rs"
         ],
         "filter": {
@@ -39,7 +39,7 @@
           "kind": "bin"
         }
       },
-      "args": [],
+      "args": ["rtsp://192.168.0.20/profile1/media.smp", "admin", "dkr00t!2#4", "http://127.0.0.1:8010/recvMetadata"],
       "cwd": "${workspaceFolder}"
     }
   ]

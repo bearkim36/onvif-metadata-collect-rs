@@ -3,21 +3,12 @@
  * 
  * 
  */
-
-use std::{thread, time, env, io};
-use std::path::PathBuf;
-use anyhow::{anyhow, Error};
+use std::{thread, time, env};
+use anyhow::Error;
 
 mod edge_metadata;
 
-extern crate dotenv;
-
-
-async fn edge_device_mode() -> Result<(), Error> {
-    let rtsp_url = env::var("RTSP_URL").unwrap();
-    let rtsp_id = env::var("RTSP_ID").unwrap();
-    let rtsp_pw = env::var("RTSP_PW").unwrap();
-
+async fn edge_device_mode(rtsp_url:String, rtsp_id:String, rtsp_pw:String, analysis_url:String) -> Result<(), Error> {    
     tokio::spawn(async move {
         let metadata = edge_metadata::Metadata { 
             url: String::from(rtsp_url),
@@ -26,7 +17,7 @@ async fn edge_device_mode() -> Result<(), Error> {
         };
         loop {
             println!("Start ONVIF session");
-            if let Err(_err) = edge_metadata::MetadataManager::run_onvif(&metadata).await {
+            if let Err(_err) = edge_metadata::MetadataManager::run_onvif(&metadata, analysis_url.clone()).await {
                 println!("retry 5sec after");
                 thread::sleep(time::Duration::from_secs(5));
             }
@@ -34,22 +25,17 @@ async fn edge_device_mode() -> Result<(), Error> {
     }).await?
 }
 
-fn get_env_path() -> io::Result<PathBuf> {
-    let mut dir = env::current_exe()?;
-    dir.pop();    
-    dir.push(".env");
-    Ok(dir)
-}
 
 
 #[tokio::main]
 async fn main() { 
-    let path = get_env_path().expect("Couldn't");    
-    println!("{}", path.display());
-    dotenv::from_filename(path).expect("Failed to open directory");
-
+    let args: Vec<String> = env::args().collect();        
+    println!("RTSP URL: {}", args[1]);
+    println!("ADMIN: {}", args[2]);
+    println!("PASSWORD: {}", args[3]);
+    println!("ANALYSIS_URL: {}", args[4]);
     println!("Boot on Edge device Mode");
-    edge_device_mode().await.unwrap();        
+    edge_device_mode(args[1].clone(), args[2].clone(), args[3].clone(), args[4].clone()).await.unwrap();        
     
 }
 
