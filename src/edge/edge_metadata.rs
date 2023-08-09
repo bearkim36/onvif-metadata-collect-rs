@@ -33,9 +33,6 @@ pub struct Metadata {
 impl MetadataManager for Metadata {  
   async fn run_onvif(&self, analysis_url_origin:String) -> Result<(), Error> {
 
-    println!("onvif url: {}", self.url.clone());
-    println!("onvif id/pw {}/{}", self.username.clone(), self.password.clone());    
-
     let session_group = Arc::new(SessionGroup::default());
     let creds = Some(retina::client::Credentials {
         username : self.username.clone(),
