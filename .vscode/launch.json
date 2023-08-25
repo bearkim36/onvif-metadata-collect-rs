@@ -39,7 +39,11 @@
           "kind": "bin"
         }
       },
-      "args": ["rtsp://192.168.0.20/profile1/media.smp", "admin", "dkr00t!2#4", "http://127.0.0.1:8010/recvMetadata"],
+      "args": [
+        "--url=rtsp://192.168.0.20/profile1/media.smp", 
+        "--username=admin", 
+        "--password=dkr00t!2#4", 
+        "--analysis=http://127.0.0.1:8010/recvMetadata"],
       "cwd": "${workspaceFolder}"
     }
   ]

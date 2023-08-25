@@ -4,9 +4,25 @@
  * 
  */
 use std::{thread, time, env};
+use clap::Parser;
 use anyhow::Error;
 
 mod edge_metadata;
+
+#[derive(Parser)]
+struct Opts {
+    #[arg(long)]
+    url: Option<String>,
+
+    #[arg(long)]
+    username: Option<String>,
+
+    #[arg(long, requires = "username")]
+    password: Option<String>,
+    
+    #[arg( long)]
+    analysis: Option<String>,    
+}
 
 async fn edge_device_mode(rtsp_url:String, rtsp_id:String, rtsp_pw:String, analysis_url:String) -> Result<(), Error> {    
     tokio::spawn(async move {
@@ -29,13 +45,19 @@ async fn edge_device_mode(rtsp_url:String, rtsp_id:String, rtsp_pw:String, analy
 
 #[tokio::main]
 async fn main() { 
-    let args: Vec<String> = env::args().collect();        
-    println!("RTSP URL: {}", args[1]);
-    println!("ADMIN: {}", args[2]);
-    println!("PASSWORD: {}", args[3]);
-    println!("ANALYSIS_URL: {}", args[4]);
+    let opts = Opts::parse();
+
+    let rtsp_url = opts.url.as_deref().unwrap().to_string();
+    let rtsp_id = opts.username.as_deref().unwrap().to_string();
+    let rtsp_pw = opts.password.as_deref().unwrap().to_string();
+    let analysis_url = opts.analysis.as_deref().unwrap().to_string();
+    println!("RTSP URL: {}", rtsp_url);
+    println!("ADMIN: {}", rtsp_id);
+    println!("PASSWORD: {}", rtsp_pw);
+    println!("ANALYSIS_URL: {}", analysis_url);
     println!("Boot on Edge device Mode");
-    edge_device_mode(args[1].clone(), args[2].clone(), args[3].clone(), args[4].clone()).await.unwrap();        
+
+    edge_device_mode(rtsp_url, rtsp_id, rtsp_pw, analysis_url).await.unwrap();        
     
 }
 

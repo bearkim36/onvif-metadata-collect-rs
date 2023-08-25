@@ -29,12 +29,27 @@ pub struct Metadata {
   pub rect: Rect,
   pub class: MetadataClass,
   pub currentTime:u64,  
-  pub plateNumberDetecting: bool,
-  pub plateUuid: String,
-  pub detectStatus: String,
-  pub detectType: u32,
-  pub vehicleType: u32, 
-  // vehicleColor
+  // pub plateNumberDetecting: bool,
+  // pub plateUuid: String,
+  // pub detectStatus: String,
+  pub detectType: i32,  
+  // Human
+  pub genderType: i32,
+  pub hatDetection: i32,
+  pub bagDetection: i32,
+  pub topLength: i32,
+  pub bottomLength: i32,
+  pub topColor: Vec<u32>,
+  pub bottomColor: Vec<u32>,
+  // Face
+  pub faceGenderType: i32,
+  pub ageType: i32,
+  pub hat: i32,
+  pub mask: i32,
+  pub opticals: i32,
+  // Vehicle
+  pub vehicleType: i32, 
+  pub vehicleColor: Vec<u32>,
 }
 
 impl Metadata {
@@ -61,11 +76,24 @@ impl Metadata {
             likelihood: "".to_string(),
         },
         currentTime: 0,
-        plateNumberDetecting: false,
-        plateUuid: "".to_string(),
-        detectStatus: "".to_string(),
-        detectType: 0,
-        vehicleType: 0,
+        // plateNumberDetecting: false,
+        // plateUuid: "".to_string(),
+        // detectStatus: "".to_string(),
+        detectType: -1,        
+        genderType: -1,
+        hatDetection: -1,
+        bagDetection: -1,
+        topLength: -1,
+        bottomLength: -1,
+        topColor: vec![],
+        bottomColor: vec![],
+        faceGenderType: -1,
+        ageType: -1,
+        hat: -1,
+        mask: -1,
+        opticals: -1,
+        vehicleType: -1,
+        vehicleColor: vec![],
     }     
   }
 }
