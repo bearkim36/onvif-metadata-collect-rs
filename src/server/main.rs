@@ -10,7 +10,6 @@ use anyhow::{anyhow, Error};
 use rdkafka::config::ClientConfig;
 use rdkafka::producer::{FutureProducer, FutureRecord};
 
-
 mod server_metadata;
 mod fclt;
 mod util;

@@ -66,7 +66,7 @@ async fn proc_metadata(metadata:Value,  transformation_data:Value, producer:Futu
   // 메타데이터 처리
   if metadata_class.contains("Face") || metadata_class.contains("Head") {
     metadata_result.detectType = 2;            
-    if (cloned_data["Appearance"].get("HumanFace")).is_some() {      
+    if (cloned_data["Appearance"].get("HumanFace")).is_some() {            
       if cloned_data["Appearance"]["HumanFace"]["Gender"].to_string().to_lowercase().contains("male") {
         metadata_result.faceGenderType = 0;
       }
