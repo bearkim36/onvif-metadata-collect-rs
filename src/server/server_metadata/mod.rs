@@ -110,7 +110,7 @@ impl MetadataManager for MetadataConfig {
             item = session.next() => {
                 match item.ok_or_else(|| anyhow!("EOF"))?? {
                     CodecItem::MessageFrame(m) => {
-                        //println!("{}", std::str::from_utf8(m.data()).unwrap());
+                        // println!("{}", std::str::from_utf8(m.data()).unwrap());
                         let conf = Config::new_with_custom_values(true, "", "txt", NullValue::Null);
                         let json = xml_string_to_json(std::str::from_utf8(m.data()).unwrap().to_string(), &conf).unwrap();
                         let mut metadata_object = metadata::Metadata::new();

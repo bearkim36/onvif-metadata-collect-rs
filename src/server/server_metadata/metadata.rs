@@ -2,16 +2,16 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize ,Debug, Clone)]
 pub struct XY{
-  pub x:u32,
-  pub y:u32,
+  pub x:f64,
+  pub y:f64,
 }
 
 #[derive(Serialize, Deserialize ,Debug, Clone)]
 pub struct Rect {
-  pub top: u32,
-  pub bottom: u32,
-  pub left: u32,
-  pub right: u32,
+  pub top: f64,
+  pub bottom: f64,
+  pub left: f64,
+  pub right: f64,
   pub center: XY,
   pub translate: XY,
 }
@@ -58,17 +58,17 @@ impl Metadata {
         faceId: "".to_string(),
         fcltId: "".to_string(),
         rect: Rect {
-            top: 0,
-            bottom: 0,
-            left: 0,
-            right: 0,
+            top: 0.0,
+            bottom: 0.0,
+            left: 0.0,
+            right: 0.0,
             center: XY {
-                x: 0,
-                y: 0,
+                x: 0.0,
+                y: 0.0,
             },
             translate: XY {
-              x: 0,
-              y: 0,
+              x: 0.0,
+              y: 0.0,
           },
         },
         class: MetadataClass {

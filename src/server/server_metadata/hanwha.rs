@@ -18,10 +18,11 @@ pub async fn proc(json:Value, producer:FutureProducer, fclt_id:String, camera_ip
   if date_str != "null" {
       let date = NaiveDateTime::parse_from_str(&date_str, "%Y-%m-%dT%H:%M:%S%.3fZ").unwrap();
       // 객체가 한 개일때      
+      let transformation_data = meta["Frame"]["Transformation"].clone();
       if meta["Frame"]["Object"].as_array().iter().len() == 0 {            
-          let cloned_data = meta["Frame"]["Object"].clone();
+          let cloned_data = meta["Frame"]["Object"].clone();          
           if !cloned_data.is_null() {            
-            metadata_result = proc_metadata(cloned_data, producer, fclt_id, date_str, camera_ip, http_port).await.unwrap();
+            metadata_result = proc_metadata(cloned_data, transformation_data, producer, fclt_id, date_str, camera_ip, http_port).await.unwrap();
           }                
          
       }
@@ -29,8 +30,8 @@ pub async fn proc(json:Value, producer:FutureProducer, fclt_id:String, camera_ip
       else {
           for objects in meta["Frame"]["Object"].as_array().into_iter() {
               for obj in objects.iter() {
-                  let cloned_data = obj.clone();                  
-                  metadata_result = proc_metadata(cloned_data, producer.clone(), fclt_id.clone(), date_str.clone(), camera_ip.clone(), http_port.clone()).await.unwrap();
+                  let cloned_data = obj.clone();   
+                  metadata_result = proc_metadata(cloned_data,  transformation_data.clone(), producer.clone(), fclt_id.clone(), date_str.clone(), camera_ip.clone(), http_port.clone()).await.unwrap();
               }
           }
       }                
@@ -38,7 +39,7 @@ pub async fn proc(json:Value, producer:FutureProducer, fclt_id:String, camera_ip
   Ok(metadata_result)
 }
 
-async fn proc_metadata(metadata:Value,  producer:FutureProducer, fclt_id:String, utc_time:String, camera_ip:String, http_port:String) -> Result<metadata::Metadata, Error> {  
+async fn proc_metadata(metadata:Value,  transformation_data:Value, producer:FutureProducer, fclt_id:String, utc_time:String, camera_ip:String, http_port:String) -> Result<metadata::Metadata, Error> {  
   let cloned_data = metadata.clone();  
   let object_id = cloned_data["ObjectId"].clone();
   let mut metadata_result:metadata::Metadata = metadata::Metadata::new();
@@ -51,6 +52,16 @@ async fn proc_metadata(metadata:Value,  producer:FutureProducer, fclt_id:String,
   //     cross_line: vec![]
   // };
   
+  // println!("{:?}", cloned_data);
+  metadata_result.rect.top = cloned_data["Appearance"]["Shape"]["BoundingBox"]["top"].as_f64().unwrap();  
+  metadata_result.rect.bottom = cloned_data["Appearance"]["Shape"]["BoundingBox"]["bottom"].as_f64().unwrap();
+  metadata_result.rect.left = cloned_data["Appearance"]["Shape"]["BoundingBox"]["left"].as_f64().unwrap();
+  metadata_result.rect.right = cloned_data["Appearance"]["Shape"]["BoundingBox"]["right"].as_f64().unwrap();
+  metadata_result.rect.center.x = cloned_data["Appearance"]["Shape"]["CenterOfGravity"]["x"].as_f64().unwrap();
+  metadata_result.rect.center.y = cloned_data["Appearance"]["Shape"]["CenterOfGravity"]["y"].as_f64().unwrap();
+  metadata_result.rect.translate.x = transformation_data["Translate"]["x"].as_f64().unwrap();
+  metadata_result.rect.translate.y = transformation_data["Translate"]["y"].as_f64().unwrap();
+
   let metadata_class = cloned_data["Appearance"]["Class"]["Type"]["txt"].to_string(); 
   // 메타데이터 처리
   if metadata_class.contains("Face") || metadata_class.contains("Head") {
@@ -100,8 +111,7 @@ async fn proc_metadata(metadata:Value,  producer:FutureProducer, fclt_id:String,
     }
   }
   else if metadata_class.contains("Human") {
-    metadata_result.detectType = 0;
-    println!("{:?}", cloned_data);
+    metadata_result.detectType = 0;    
     if (cloned_data["Appearance"].get("HumanBody")).is_some() {
       if cloned_data["Appearance"]["HumanBody"]["Gender"].to_string().to_lowercase().contains("male") {
         metadata_result.genderType = 0;
