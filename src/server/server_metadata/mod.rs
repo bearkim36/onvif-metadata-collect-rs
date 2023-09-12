@@ -6,6 +6,7 @@ use std::sync::{Arc};
 // use tokio::sync::Mutex;
 // use std::collections::HashMap;
 use futures::StreamExt;
+use serde_json::Value;
 use url::{Url};
 use anyhow::{anyhow, Error};
 
@@ -108,22 +109,21 @@ impl MetadataManager for MetadataConfig {
         i += 1;
         tokio::select! {
             item = session.next() => {
-                match item.ok_or_else(|| anyhow!("EOF"))?? {
+                match item.ok_or_else(|| anyhow!("EOF"))?? {                
                     CodecItem::MessageFrame(m) => {
                         // println!("{}", std::str::from_utf8(m.data()).unwrap());
                         let conf = Config::new_with_custom_values(true, "", "txt", NullValue::Null);
                         let json = xml_string_to_json(std::str::from_utf8(m.data()).unwrap().to_string(), &conf).unwrap();
-                        let mut metadata_object = metadata::Metadata::new();
+                        let mut metadata_map: serde_json::Map<String,Value> = serde_json::Map::new();
                         
                         if self.ai_cam_model.contains("hanwha") {
-                            metadata_object = hanwha::proc(json, producer.clone(), self.fclt_id.clone(), self.camera_ip.clone(), self.http_port.clone(), self.img_save_path.clone(), self.face_recognition_url.clone()).await.unwrap();
+                            metadata_map = hanwha::proc(json, producer.clone(), self.fclt_id.clone(), self.camera_ip.clone(), self.http_port.clone(), self.img_save_path.clone(), self.face_recognition_url.clone()).await.unwrap();
                         }
                         else if self.ai_cam_model.contains("truen") {
-                            metadata_object = truen::proc(json, producer.clone(), self.fclt_id.clone(), self.camera_ip.clone(), self.http_port.clone(), self.img_save_path.clone(), self.face_recognition_url.clone()).await.unwrap();
-                        }
-                        metadata_object.fcltId = self.fclt_id.to_string();
+                            // metadata_object = truen::proc(json, producer.clone(), self.fclt_id.clone(), self.camera_ip.clone(), self.http_port.clone(), self.img_save_path.clone(), self.face_recognition_url.clone()).await.unwrap();
+                        }                        
 
-                        let metadata_object_buffer = serde_json::to_string(&metadata_object).expect("json serialazation failed");
+                        let metadata_object_buffer = serde_json::to_string(&metadata_map).expect("json serialazation failed");
 
                         producer.send(
                             FutureRecord::to("metadata")
@@ -132,7 +132,7 @@ impl MetadataManager for MetadataConfig {
                                 std::time::Duration::from_secs(0)
                         ).await.unwrap();
                     },
-                    _ => continue,
+                    _ => continue,                    
                 };
             },
            

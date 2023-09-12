@@ -50,6 +50,7 @@ pub struct Metadata {
   // Vehicle
   pub vehicleType: i32, 
   pub vehicleColor: Vec<u32>,
+  pub imagePath:String
 }
 
 impl Metadata {
@@ -94,6 +95,7 @@ impl Metadata {
         opticals: -1,
         vehicleType: -1,
         vehicleColor: vec![],
+        imagePath: "".to_string()
     }     
   }
 }

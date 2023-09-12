@@ -7,12 +7,14 @@ use std::fs;
 use rdkafka::producer::{FutureProducer, FutureRecord};
 use reqwest::Client; 
 
+use crate::fclt;
 use crate::server_metadata::metadata;
 use crate::server_metadata::bestshot;
 
-pub async fn proc(json:Value, producer:FutureProducer, fclt_id:String, camera_ip:String, http_port:String, img_save_path:String, face_recognition_url:String) -> Result<metadata::Metadata, Error> {
+pub async fn proc(json:Value, producer:FutureProducer, fclt_id:String, camera_ip:String, http_port:String, img_save_path:String, face_recognition_url:String) -> Result<serde_json::Map<String,Value>, Error> {
   let meta = json["MetadataStream"]["VideoAnalytics"].clone();
   let date_str:String = meta["Frame"]["UtcTime"].to_string().replace("\"", "");
+  let mut metadata_map: serde_json::Map<String,Value> = serde_json::Map::new();
   let mut metadata_result:metadata::Metadata = metadata::Metadata::new();
 
   if date_str != "null" {
@@ -20,9 +22,11 @@ pub async fn proc(json:Value, producer:FutureProducer, fclt_id:String, camera_ip
       // 객체가 한 개일때      
       let transformation_data = meta["Frame"]["Transformation"].clone();
       if meta["Frame"]["Object"].as_array().iter().len() == 0 {            
+          let object_id = meta["Frame"]["Object"]["ObjectId"].clone().to_string();
           let cloned_data = meta["Frame"]["Object"].clone();          
           if !cloned_data.is_null() {            
-            metadata_result = proc_metadata(cloned_data, transformation_data, producer, fclt_id, date_str, camera_ip, http_port).await.unwrap();
+            metadata_result = proc_metadata(cloned_data, transformation_data, producer, fclt_id, date_str, camera_ip, http_port).await.unwrap();            
+            metadata_map.insert(object_id, json!(metadata_result));
           }                
          
       }
@@ -31,12 +35,14 @@ pub async fn proc(json:Value, producer:FutureProducer, fclt_id:String, camera_ip
           for objects in meta["Frame"]["Object"].as_array().into_iter() {
               for obj in objects.iter() {
                   let cloned_data = obj.clone();   
+                  let object_id = cloned_data.clone()["ObjectId"].to_string();
                   metadata_result = proc_metadata(cloned_data,  transformation_data.clone(), producer.clone(), fclt_id.clone(), date_str.clone(), camera_ip.clone(), http_port.clone()).await.unwrap();
+                  metadata_map.insert(object_id, json!(metadata_result));
               }
           }
       }                
   }   
-  Ok(metadata_result)
+  Ok(metadata_map)
 }
 
 async fn proc_metadata(metadata:Value,  transformation_data:Value, producer:FutureProducer, fclt_id:String, utc_time:String, camera_ip:String, http_port:String) -> Result<metadata::Metadata, Error> {  
@@ -53,6 +59,7 @@ async fn proc_metadata(metadata:Value,  transformation_data:Value, producer:Futu
   // };
   
   // println!("{:?}", cloned_data);
+  metadata_result.fcltId = fclt_id.clone();
   metadata_result.rect.top = cloned_data["Appearance"]["Shape"]["BoundingBox"]["top"].as_f64().unwrap();  
   metadata_result.rect.bottom = cloned_data["Appearance"]["Shape"]["BoundingBox"]["bottom"].as_f64().unwrap();
   metadata_result.rect.left = cloned_data["Appearance"]["Shape"]["BoundingBox"]["left"].as_f64().unwrap();

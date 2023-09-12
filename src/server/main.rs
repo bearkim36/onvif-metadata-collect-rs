@@ -81,7 +81,7 @@ async fn server_mode() -> Result<(), Error> {
                     }
 
                     println!("{} Start ONVIF session", i);
-                    server_metadata::MetadataManager::run_onvif(&metadata, p.clone()).await.unwrap();
+                    server_metadata::MetadataManager::run_onvif(&metadata, p.clone()).await;
                     
                     thread::sleep(time::Duration::from_secs(5));
                 }
