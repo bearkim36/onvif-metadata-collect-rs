@@ -1,3 +1,5 @@
+extern crate chrono;
+
 use anyhow::Error;
 use chrono::NaiveDateTime;
 use serde_json::Value;
@@ -6,12 +8,13 @@ use uuid::Uuid;
 use std::fs;
 use rdkafka::producer::{FutureProducer, FutureRecord};
 use reqwest::Client; 
+use chrono::Local;
 
 use crate::fclt;
 use crate::server_metadata::metadata;
 use crate::server_metadata::bestshot;
 
-pub async fn proc(json:Value, producer:FutureProducer, fclt_id:String, camera_ip:String, http_port:String, img_save_path:String, face_recognition_url:String) -> Result<serde_json::Map<String,Value>, Error> {
+pub async fn proc(json:Value, producer:FutureProducer, fclt_id:String, camera_ip:String, http_port:String, img_save_path:String) -> Result<serde_json::Map<String,Value>, Error> {
   let meta = json["MetadataStream"]["VideoAnalytics"].clone();
   let date_str:String = meta["Frame"]["UtcTime"].to_string().replace("\"", "");
   let mut metadata_map: serde_json::Map<String,Value> = serde_json::Map::new();
@@ -25,7 +28,7 @@ pub async fn proc(json:Value, producer:FutureProducer, fclt_id:String, camera_ip
           let object_id = meta["Frame"]["Object"]["ObjectId"].clone().to_string();
           let cloned_data = meta["Frame"]["Object"].clone();          
           if !cloned_data.is_null() {            
-            metadata_result = proc_metadata(cloned_data, transformation_data, producer, fclt_id, date_str, camera_ip, http_port).await.unwrap();            
+            metadata_result = proc_metadata(cloned_data, transformation_data, producer, fclt_id, date_str, camera_ip, http_port, img_save_path).await.unwrap();            
             metadata_map.insert(object_id, json!(metadata_result));
           }                
          
@@ -36,7 +39,7 @@ pub async fn proc(json:Value, producer:FutureProducer, fclt_id:String, camera_ip
               for obj in objects.iter() {
                   let cloned_data = obj.clone();   
                   let object_id = cloned_data.clone()["ObjectId"].to_string();
-                  metadata_result = proc_metadata(cloned_data,  transformation_data.clone(), producer.clone(), fclt_id.clone(), date_str.clone(), camera_ip.clone(), http_port.clone()).await.unwrap();
+                  metadata_result = proc_metadata(cloned_data,  transformation_data.clone(), producer.clone(), fclt_id.clone(), date_str.clone(), camera_ip.clone(), http_port.clone(), img_save_path.clone()).await.unwrap();
                   metadata_map.insert(object_id, json!(metadata_result));
               }
           }
@@ -45,18 +48,10 @@ pub async fn proc(json:Value, producer:FutureProducer, fclt_id:String, camera_ip
   Ok(metadata_map)
 }
 
-async fn proc_metadata(metadata:Value,  transformation_data:Value, producer:FutureProducer, fclt_id:String, utc_time:String, camera_ip:String, http_port:String) -> Result<metadata::Metadata, Error> {  
+async fn proc_metadata(metadata:Value,  transformation_data:Value, producer:FutureProducer, fclt_id:String, utc_time:String, camera_ip:String, http_port:String, img_save_path:String) -> Result<metadata::Metadata, Error> {  
   let cloned_data = metadata.clone();  
   let object_id = cloned_data["ObjectId"].clone();
   let mut metadata_result:metadata::Metadata = metadata::Metadata::new();
-
-  // let mut metadata_object = MetadataObject{
-  //     object_id: object_id.to_string(),
-  //     class: cloned_data["Appearance"]["Class"]["Type"]["txt"].to_string().replace("\"", ""),
-  //     object_array: json!(meta["Frame"]["Object"].clone()),
-  //     last_time: date.timestamp_millis(),
-  //     cross_line: vec![]
-  // };
   
   // println!("{:?}", cloned_data);
   metadata_result.fcltId = fclt_id.clone();
@@ -289,7 +284,10 @@ async fn proc_metadata(metadata:Value,  transformation_data:Value, producer:Futu
     metadata_result.detectType = 3;
   }
   
-  if let Some(image_ref) = cloned_data["Appearance"].get("ImageRef") {        
+  if let Some(image_ref) = cloned_data["Appearance"].get("ImageRef") {                
+    let date_format = Local::now().format("%Y-%m-%d").to_string();
+    let file_name = format!("{}.jpg" ,Uuid::new_v4());
+    let file_path = format!("{}/{}/{}/{}", img_save_path, date_format, fclt_id, file_name);
     let bestshot = bestshot::Bestshot {
       fclt_id,
       image_ref: image_ref.to_string().replace("\"", ""),
@@ -297,8 +295,11 @@ async fn proc_metadata(metadata:Value,  transformation_data:Value, producer:Futu
       camera_ip: camera_ip.to_string(),
       http_port: http_port.to_string(),
       utc_time,
-      class: metadata_class.to_string().replace("\"", "")
-    };
+      class: metadata_class.to_string().replace("\"", ""),
+      date: date_format,
+      file_name: file_name
+    };    
+    metadata_result.imagePath = file_path;
     let bestshot_buffer = serde_json::to_string(&bestshot).expect("json serialazation failed");
     producer.send(
       FutureRecord::to("bestshot")

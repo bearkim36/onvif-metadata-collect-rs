@@ -45,6 +45,25 @@
         "--password=dkr00t!2#4", 
         "--analysis=http://127.0.0.1:8010/recvMetadata"],
       "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug unit tests in executable 'test'",
+      "cargo": {
+        "args": [
+          "build",
+          "--bin=test",
+          "--verbose",
+          "--package=onvif-metadata-rs"
+        ],
+        "filter": {
+          "name": "test",
+          "kind": "bin"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
     }
   ]
 }

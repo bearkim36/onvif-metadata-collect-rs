@@ -36,10 +36,12 @@ mod bestshot;
 // use crate::server_metadata;
 
 #[async_trait]
-pub trait MetadataManager {
-  async fn run_onvif(&self, producer:FutureProducer) -> Result<(), Error> ;   
+pub trait MetadataManager {    
+  async fn run_onvif(&mut self, config:MetadataConfig, producer:FutureProducer) -> Result<(), Error> ;   
+  fn stop(&mut self);   
 }
 
+#[derive(Clone)]
 pub struct MetadataConfig {  
   pub camera_ip: String,  
   pub http_port: String,  
@@ -49,33 +51,29 @@ pub struct MetadataConfig {
   pub img_save_path: String,
   pub fclt_id: String,
   pub ai_cam_model: String,
-  pub face_recognition_url: String  
+  pub face_recognition_url: String,  
 }
 
-#[derive(Clone)]
-#[derive(Serialize, Deserialize ,Debug)]
-pub struct MetadataObject {    
-    pub object_id: String,    
+pub struct Manager {
+    pub is_receiving:bool
 }
-
 
 #[async_trait]
-impl MetadataManager for MetadataConfig {  
-  async fn run_onvif(&self, producer:FutureProducer) -> Result<(), Error> {        
-  
+impl MetadataManager for Manager {  
+async fn run_onvif(&mut self, config:MetadataConfig, producer:FutureProducer) -> Result<(), Error> {                
     let mut rtsp_url = "".to_string();
-    if self.ai_cam_model.contains("hanwha") {
-        rtsp_url = std::format!("rtsp://{}:{}/profile1/media.smp", self.camera_ip, self.rtsp_port);
+    if config.ai_cam_model.contains("hanwha") {
+        rtsp_url = std::format!("rtsp://{}:{}/profile2/media.smp", config.camera_ip, config.rtsp_port);
     }
-    else if self.ai_cam_model.contains("truen") {
-        rtsp_url = std::format!("rtsp://{}:{}/video1", self.camera_ip, self.rtsp_port);
+    else if config.ai_cam_model.contains("truen") {
+        rtsp_url = std::format!("rtsp://{}:{}/video1", config.camera_ip, config.rtsp_port);
     }    
     println!("onvif url: {}", rtsp_url.clone());
 
     let session_group = Arc::new(SessionGroup::default());
     let creds = Some(retina::client::Credentials {
-        username : self.username.clone(),
-        password: self.password.clone(),
+        username : config.username.clone(),
+        password: config.password.clone(),
     });
     let mut session = retina::client::Session::describe(
         Url::parse(&rtsp_url.to_string())?,
@@ -110,18 +108,17 @@ impl MetadataManager for MetadataConfig {
         tokio::select! {
             item = session.next() => {
                 match item.ok_or_else(|| anyhow!("EOF"))?? {                
-                    CodecItem::MessageFrame(m) => {
-                        // println!("{}", std::str::from_utf8(m.data()).unwrap());
+                    CodecItem::MessageFrame(m) => {                                                                        
                         let conf = Config::new_with_custom_values(true, "", "txt", NullValue::Null);
                         let json = xml_string_to_json(std::str::from_utf8(m.data()).unwrap().to_string(), &conf).unwrap();
                         let mut metadata_map: serde_json::Map<String,Value> = serde_json::Map::new();
                         
-                        if self.ai_cam_model.contains("hanwha") {
-                            metadata_map = hanwha::proc(json, producer.clone(), self.fclt_id.clone(), self.camera_ip.clone(), self.http_port.clone(), self.img_save_path.clone(), self.face_recognition_url.clone()).await.unwrap();
+                        if config.ai_cam_model.contains("hanwha") {
+                            metadata_map = hanwha::proc(json, producer.clone(), config.fclt_id.clone(), config.camera_ip.clone(), config.http_port.clone(), config.img_save_path.clone()).await.unwrap();
                         }
-                        else if self.ai_cam_model.contains("truen") {
-                            // metadata_object = truen::proc(json, producer.clone(), self.fclt_id.clone(), self.camera_ip.clone(), self.http_port.clone(), self.img_save_path.clone(), self.face_recognition_url.clone()).await.unwrap();
-                        }                        
+                        else if config.ai_cam_model.contains("truen") {
+                            // metadata_object = truen::proc(json, producer.clone(), config.fclt_id.clone(), config.camera_ip.clone(), config.http_port.clone(), config.img_save_path.clone(), config.face_recognition_url.clone()).await.unwrap();
+                        }
 
                         let metadata_object_buffer = serde_json::to_string(&metadata_map).expect("json serialazation failed");
 
@@ -132,13 +129,17 @@ impl MetadataManager for MetadataConfig {
                                 std::time::Duration::from_secs(0)
                         ).await.unwrap();
                     },
-                    _ => continue,                    
+                    _ => continue,
                 };
             },
            
         }   
-    }     
+    }
+ 
   }
-  
+
+  fn stop(&mut self) {
+    self.is_receiving = false;
+  }
 }
 
