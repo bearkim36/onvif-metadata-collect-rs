@@ -11,19 +11,14 @@ use fclt::FcltData;
 
 use std::{thread, time, env};
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use std::sync::Mutex;
 
-use anyhow::{anyhow, Error};
+use anyhow::Error;
 
-use rdkafka::client::ClientContext;
-use rdkafka::config::{ClientConfig, RDKafkaLogLevel};
-use rdkafka::producer::{FutureProducer, FutureRecord};
-use rdkafka::consumer::stream_consumer::StreamConsumer;
-use rdkafka::consumer::{CommitMode, Consumer, ConsumerContext, Rebalance, base_consumer, BaseConsumer};
-use rdkafka::error::KafkaResult;
-use rdkafka::message::{Headers, Message};
-use rdkafka::topic_partition_list::TopicPartitionList;
-use rdkafka::util::get_rdkafka_version;
+use rdkafka::config::ClientConfig;
+use rdkafka::producer::FutureProducer;
+use rdkafka::consumer::{Consumer,BaseConsumer};
+use rdkafka::message::Message;
 
 use tokio::task::JoinHandle;
 
@@ -114,7 +109,7 @@ fn thread_proc(fd:FcltData) {
                 break;                        
             }
             let p = PRODUCER.get().await;
-            server_metadata::MetadataManager::run_onvif(&mut manager, metadata_config.clone(), p.clone()).await;
+            let _ = server_metadata::MetadataManager::run_onvif(&mut manager, metadata_config.clone(), p.clone()).await;
             
             thread::sleep(time::Duration::from_secs(5));
         }
@@ -145,8 +140,7 @@ async fn kafka_consumer() -> Result<(), Error> {
         for msg_result in consumer.iter() {
             let msg = msg_result.unwrap();
             let key:&str = msg.key_view().unwrap().unwrap();
-            let value = msg.payload().unwrap();
-            println!("{:?}", value)
+            let value = msg.payload().unwrap();            
         }
     });
 
