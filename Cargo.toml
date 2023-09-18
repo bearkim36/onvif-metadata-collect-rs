@@ -26,7 +26,7 @@ reqwest = { version = "0.11.16", features = ["stream","multipart", "json", "bloc
 libloading = "0.7.3"
 rdkafka = "0.34.0"
 clap = { version = "4.1.4", features = ["derive"] }
-
+async_once = "0.2.6"
 
 [target.'cfg(windows)'.dependencies.winapi]
 version = "0.3"
