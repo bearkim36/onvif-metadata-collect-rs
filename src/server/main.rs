@@ -19,7 +19,7 @@ use rdkafka::client::ClientContext;
 use rdkafka::config::{ClientConfig, RDKafkaLogLevel};
 use rdkafka::producer::{FutureProducer, FutureRecord};
 use rdkafka::consumer::stream_consumer::StreamConsumer;
-use rdkafka::consumer::{CommitMode, Consumer, ConsumerContext, Rebalance};
+use rdkafka::consumer::{CommitMode, Consumer, ConsumerContext, Rebalance, base_consumer, BaseConsumer};
 use rdkafka::error::KafkaResult;
 use rdkafka::message::{Headers, Message};
 use rdkafka::topic_partition_list::TopicPartitionList;
@@ -128,47 +128,31 @@ fn thread_proc(fd:FcltData) {
     }
     _task_map.insert(String::from(fclt_id), handle);                   
 }
-/*
-async fn kafka_consumer(mut task_manager:TaskManager) {    
-    let mut consumer = ClientConfig::new()
-        .set("group.id", "test-group")
-        .set("bootstrap.servers", "")
-        .set("enable.partition.eof", "false")
-        .set("session.timeout.ms", "6000")
-        .set("enable.auto.commit", "true")
-        //.set("statistics.interval.ms", "30000")
-        //.set("auto.offset.reset", "smallest")
-        .set_log_level(RDKafkaLogLevel::Debug)
+
+async fn kafka_consumer() -> Result<(), Error> {
+    let kafka_broker_1 = env::var("KAFKA_SERVER_BROKER_IP1").unwrap();                
+    let consumer:BaseConsumer = ClientConfig::new()
+        .set("group.id", "collect-server-group")
+        .set("bootstrap.servers", kafka_broker_1)
+        .create()
+        .expect("error");
 
     consumer
-        .subscribe("spread")
+        .subscribe(&["spread", "bestshot"])
         .expect("Can't subscribe to specified topics");
 
-    loop {
-        match consumer.recv().await {
-            Err(e) => println!("Kafka error: {}", e),
-            Ok(m) => {
-                let payload = match m.payload_view::<str>() {
-                    None => "",
-                    Some(Ok(s)) => s,
-                    Some(Err(e)) => {
-                        println!("Error while deserializing message payload: {:?}", e);
-                        ""
-                    }
-                };
-                println!("key: '{:?}', payload: '{}', topic: {}, partition: {}, offset: {}, timestamp: {:?}",
-                      m.key(), payload, m.topic(), m.partition(), m.offset(), m.timestamp());
-                if let Some(headers) = m.headers() {
-                    for header in headers.iter() {
-                        println!("  Header {:#?}: {:?}", header.key, header.value);
-                    }
-                }
-                consumer.commit_message(&m, CommitMode::Async).unwrap();
-            }
-        };
-    }
+    thread::spawn(move || loop {
+        for msg_result in consumer.iter() {
+            let msg = msg_result.unwrap();
+            let key:&str = msg.key_view().unwrap().unwrap();
+            let value = msg.payload().unwrap();
+            println!("{:?}", value)
+        }
+    });
+
+    Ok(())
 }
- */
+
 
 #[get("/api/test")]
 async fn health_checker_handler() -> impl Responder {
@@ -221,6 +205,8 @@ async fn main()  -> std::io::Result<()> {
 
     println!("Boot on Server Mode");
     server_mode().await.unwrap();            
+    kafka_consumer().await.unwrap();
+
     HttpServer::new(move || {        
         App::new()
             .service(health_checker_handler)
