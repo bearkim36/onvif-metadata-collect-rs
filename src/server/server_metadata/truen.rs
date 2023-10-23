@@ -51,6 +51,7 @@ pub async fn proc(json:Value, producer:FutureProducer, fclt_id:String, camera_ip
     let metadata_class = cloned_data["Appearance"]["Class"]["Type"]["txt"].to_string();
     if let Some(image_ref) = cloned_data["Appearance"].get("ImageRef") {
         let date_format = Local::now().format("%Y-%m-%d").to_string();
+        let date_unix = Local::now().timestamp();
         let file_name = format!("{}.jpg" ,Uuid::new_v4());
         let file_path = format!("{}/{}/{}/{}", img_save_path, date_format, fclt_id, file_name);
         let bestshot = bestshot::Bestshot {
@@ -61,7 +62,7 @@ pub async fn proc(json:Value, producer:FutureProducer, fclt_id:String, camera_ip
           http_port: http_port.to_string(),
           utc_time,
           class: metadata_class.to_string().replace("\"", ""),
-          date: date_format,
+          date: date_unix,
           file_name: file_name
         };    
         metadata_result.imagePath = file_path;

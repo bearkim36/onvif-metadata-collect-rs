@@ -74,7 +74,8 @@ fn thread_proc(fd:FcltData) {
     let rtsp_pw = fd.camera_pass;
     let fclt_id = fd.fclt_id;
     let camera_ip = fd.camera_ip;
-    let http_port = fd.http_port;
+    // let http_port = fd.http_port;
+    let http_port = "80";
     let rtsp_port = fd.rtsp_port;                
 
     let ai_cam_model = fd.ai_cam_model;

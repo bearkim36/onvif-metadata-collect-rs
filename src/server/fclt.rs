@@ -14,8 +14,7 @@ pub struct FcltLib {
 #[allow(non_snake_case)]
 #[derive(Debug, Serialize, Deserialize)]
 struct FcltTypeData {
-    dataKey: String,
-    label: String,
+    dataKey: String,    
     value: mongodb::bson::Bson
 }
 
@@ -33,7 +32,7 @@ pub struct FcltData {
     pub fclt_name: String,
     pub camera_ip: String,
     pub rtsp_port: String,    
-    pub http_port: String,
+    // pub http_port: String,
     pub camera_id: String,
     pub camera_pass: String,
     pub ai_cam_model: String,
@@ -95,7 +94,7 @@ impl FcltLib {
                 camera_id,
                 camera_pass,
                 ai_cam_model,
-                http_port
+                // http_port
             };
 
 
@@ -121,7 +120,7 @@ impl FcltLib {
             camera_id: "".to_string(),
             camera_pass: "".to_string(),
             ai_cam_model: "".to_string(),
-            http_port: "".to_string()
+            // http_port: "".to_string()
         };          
 
         if fclt_models.len() > 0 {
@@ -163,7 +162,7 @@ impl FcltLib {
             fd.camera_id= camera_id;
             fd.camera_pass= camera_pass;
             fd.ai_cam_model= ai_cam_model;
-            fd.http_port= http_port;
+            // fd.http_port= http_port;
             
         }
         fd

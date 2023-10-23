@@ -9,6 +9,6 @@ pub struct Bestshot {
   pub http_port: String,
   pub utc_time: String,  
   pub class: String,  
-  pub date: String,
+  pub date: i64,
   pub file_name: String
 }

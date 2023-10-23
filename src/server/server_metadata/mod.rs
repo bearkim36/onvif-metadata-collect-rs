@@ -63,7 +63,7 @@ impl MetadataManager for Manager {
 async fn run_onvif(&mut self, config:MetadataConfig, producer:FutureProducer) -> Result<(), Error> {                
     let mut rtsp_url = "".to_string();
     if config.ai_cam_model.contains("hanwha") {
-        rtsp_url = std::format!("rtsp://{}:{}/profile2/media.smp", config.camera_ip, config.rtsp_port);
+        rtsp_url = std::format!("rtsp://{}:{}/0/onvif/profile1/media.smp", config.camera_ip, config.rtsp_port);
     }
     else if config.ai_cam_model.contains("truen") {
         rtsp_url = std::format!("rtsp://{}:{}/video1", config.camera_ip, config.rtsp_port);

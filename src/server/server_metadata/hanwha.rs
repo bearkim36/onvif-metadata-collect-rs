@@ -285,7 +285,8 @@ async fn proc_metadata(metadata:Value,  transformation_data:Value, producer:Futu
   }
   
   if let Some(image_ref) = cloned_data["Appearance"].get("ImageRef") {                
-    let date_format = Local::now().format("%Y-%m-%d").to_string();
+    let date_format = Local::now().format("%Y-%m-%d ").to_string();
+    let date_unix = Local::now().timestamp();
     let file_name = format!("{}.jpg" ,Uuid::new_v4());
     let file_path = format!("{}/{}/{}/{}", img_save_path, date_format, fclt_id, file_name);
     let bestshot = bestshot::Bestshot {
@@ -296,7 +297,7 @@ async fn proc_metadata(metadata:Value,  transformation_data:Value, producer:Futu
       http_port: http_port.to_string(),
       utc_time,
       class: metadata_class.to_string().replace("\"", ""),
-      date: date_format,
+      date: date_unix,
       file_name: file_name
     };    
     metadata_result.imagePath = file_path;
