@@ -22,9 +22,12 @@ struct Opts {
     
     #[arg( long)]
     analysis: Option<String>,    
+
+    #[arg(long)]
+    imagepath: Option<String>,
 }
 
-async fn edge_device_mode(rtsp_url:String, rtsp_id:String, rtsp_pw:String, analysis_url:String) -> Result<(), Error> {    
+async fn edge_device_mode(rtsp_url:String, rtsp_id:String, rtsp_pw:String, analysis_url:String, image_path:String) -> Result<(), Error> {    
     tokio::spawn(async move {
         let metadata = edge_metadata::Metadata { 
             url: String::from(rtsp_url),
@@ -33,7 +36,7 @@ async fn edge_device_mode(rtsp_url:String, rtsp_id:String, rtsp_pw:String, analy
         };
         loop {
             println!("Start ONVIF session");
-            if let Err(_err) = edge_metadata::MetadataManager::run_onvif(&metadata, analysis_url.clone()).await {
+            if let Err(_err) = edge_metadata::MetadataManager::run_onvif(&metadata, analysis_url.clone(), image_path.clone()).await {
                 println!("retry 5sec after");
                 thread::sleep(time::Duration::from_secs(5));
             }
@@ -51,13 +54,16 @@ async fn main() {
     let rtsp_id = opts.username.as_deref().unwrap().to_string();
     let rtsp_pw = opts.password.as_deref().unwrap().to_string();
     let analysis_url = opts.analysis.as_deref().unwrap().to_string();
+    let image_path = opts.imagepath.as_deref().unwrap().to_string();
+    
     println!("RTSP URL: {}", rtsp_url);
     println!("ADMIN: {}", rtsp_id);
     println!("PASSWORD: {}", rtsp_pw);
     println!("ANALYSIS_URL: {}", analysis_url);
+    println!("IMAGE PATH: {}", image_path);
     println!("Boot on Edge device Mode");
 
-    edge_device_mode(rtsp_url, rtsp_id, rtsp_pw, analysis_url).await.unwrap();        
+    edge_device_mode(rtsp_url, rtsp_id, rtsp_pw, analysis_url, image_path).await.unwrap();        
     
 }
 

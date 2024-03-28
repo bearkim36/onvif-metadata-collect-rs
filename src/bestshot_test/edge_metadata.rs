@@ -19,8 +19,7 @@ use uuid::Uuid;
 
 #[async_trait]
 pub trait MetadataManager {
-  async fn run_onvif(&self, analysis_url:String) -> Result<(), Error> ;   
-  async fn save_bestshot(img_save_path:String,  image_ref:String) -> Result<String, Error> ;
+  async fn run_onvif(&self, analysis_url:String,  image_path:String) -> Result<(), Error> ;   
 }
 
 pub struct Metadata {  
@@ -33,7 +32,7 @@ pub struct Metadata {
 
 #[async_trait]
 impl MetadataManager for Metadata {  
-  async fn run_onvif(&self, analysis_url_origin:String) -> Result<(), Error> {
+  async fn run_onvif(&self, analysis_url:String, image_path:String) -> Result<(), Error> {
 
     let session_group = Arc::new(SessionGroup::default());
     let creds = Some(retina::client::Credentials {
@@ -76,16 +75,15 @@ impl MetadataManager for Metadata {
                         let image_ref = json["MetaDataStream"]["VideoAnalytics"]["Frame"]["Object"]["Appearance"]["ImageRef"].to_string();
                     
                         if image_ref != "null" {
-                            task::spawn(async move {
-                                let file_path = "/home/bearkim/image".to_string();
-                                let file_name = format!("{}/{:?}.jpg", file_path.clone(), Uuid::new_v4());
+                            task::spawn(async move {                                
+                                let file_name = format!("{}/{:?}.jpg", image_path.clone(), Uuid::new_v4());
                                 let return_file_name = file_name.to_owned();
                             
-                                fs::create_dir_all(file_path.clone()).unwrap();        
+                                fs::create_dir_all(image_path.clone()).unwrap();        
                                 let url = format!("{}", image_ref);
                                 let client = Client::new();                                            
-                                println!("{:?}", url.replace("\"", "").replace("192.168.219.169", "sbsb1.truecam.net"));                                
-                                let resp = client.get(url.replace("\"", "").replace("192.168.219.169", "sbsb1.truecam.net")).send().await.unwrap();
+                                println!("{:?}", url.replace("\"", "").replace("172.30.1.11", "southdoor2.truecam.net"));                                
+                                let resp = client.get(url.replace("\"", "").replace("172.30.1.11", "southdoor2.truecam.net")).send().await.unwrap();
                             
                                 match resp.error_for_status() {
                                     Ok(_res) => {
@@ -99,7 +97,7 @@ impl MetadataManager for Metadata {
                                         );
                                     }
                                 }
-                            });
+                            }.clone());
                         }
 
 
@@ -124,32 +122,5 @@ impl MetadataManager for Metadata {
   }
 
   
-  async fn save_bestshot(img_save_path:String, image_ref:String) -> Result<String, Error> {    
-    let file_path = format!("{}",img_save_path);
-    let file_name = format!("{}/{:?}.jpg", file_path.clone(), Uuid::new_v4());
-    let return_file_name = file_name.to_owned();
-
-    fs::create_dir_all(file_path.clone()).unwrap();        
-    let url = format!("{}", image_ref);
-    let client = Client::new();                                            
-
-    let resp = client.get(url).send().await.unwrap();
-
-    match resp.error_for_status() {
-        Ok(_res) => {
-            let img_bytes = _res.bytes().await.unwrap();                                                                                        
-            fs::write(file_name, img_bytes).expect("Unable to write file");                                        
-        },
-        Err(err) => {
-            assert_eq!(
-                err.status(),
-                Some(reqwest::StatusCode::BAD_REQUEST)
-            );
-        }
-    }
-    
-    Ok(return_file_name)
-  }
-
 
 }

@@ -49,13 +49,9 @@ features = [
 ]
 
 [[bin]]
-name = "edge"
-path = "src/edge/main.rs"
+name = "bestshot_test"
+path = "src/bestshot_test/main.rs"
 
 [[bin]]
 name = "server"
 path = "src/server/main.rs"
-
-[[bin]]
-name = "test"
-path = "src/test.rs"

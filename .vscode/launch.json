@@ -26,43 +26,24 @@
     {
       "type": "lldb",
       "request": "launch",
-      "name": "Debug unit tests in executable 'edge'",
+      "name": "Debug unit tests in executable 'bestshot_test'",
       "cargo": {
         "args": [
           "build",
-          "--bin=edge",
+          "--bin=bestshot_test",
           "--verbose",
           "--package=onvif-metadata-rs"
         ],
         "filter": {
-          "name": "edge",
+          "name": "bestshot_test",
           "kind": "bin"
         }
       },
       "args": [
-        "--url=rtsp://192.168.0.20/profile1/media.smp", 
+        "--url=rtsp://southdoor2.truecam.net:5541/video1", 
         "--username=admin", 
-        "--password=dkr00t!2#4", 
+        "--password=43210", 
         "--analysis=http://127.0.0.1:8010/recvMetadata"],
-      "cwd": "${workspaceFolder}"
-    },
-    {
-      "type": "lldb",
-      "request": "launch",
-      "name": "Debug unit tests in executable 'test'",
-      "cargo": {
-        "args": [
-          "build",
-          "--bin=test",
-          "--verbose",
-          "--package=onvif-metadata-rs"
-        ],
-        "filter": {
-          "name": "test",
-          "kind": "bin"
-        }
-      },
-      "args": [],
       "cwd": "${workspaceFolder}"
     }
   ]
