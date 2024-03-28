@@ -69,17 +69,19 @@ impl MetadataManager for Metadata {
         tokio::select! {
             item = session.next() => {
                 match item.ok_or_else(|| anyhow!("EOF"))?? {
-                    CodecItem::MessageFrame(m) => {                        
+                    
+                    CodecItem::MessageFrame(m) => {       
+                        let cloned_image_path = image_path.clone();                 
                         let conf = Config::new_with_custom_values(true, "", "txt", NullValue::Null);
                         let json = xml_string_to_json(std::str::from_utf8(m.data()).unwrap().to_string(), &conf).unwrap();
                         let image_ref = json["MetaDataStream"]["VideoAnalytics"]["Frame"]["Object"]["Appearance"]["ImageRef"].to_string();
-                    
+                        
                         if image_ref != "null" {
                             task::spawn(async move {                                
-                                let file_name = format!("{}/{:?}.jpg", image_path.clone(), Uuid::new_v4());
+                                let file_name = format!("{}/{:?}.jpg", cloned_image_path.clone(), Uuid::new_v4());
                                 let return_file_name = file_name.to_owned();
                             
-                                fs::create_dir_all(image_path.clone()).unwrap();        
+                                fs::create_dir_all(cloned_image_path.clone()).unwrap();        
                                 let url = format!("{}", image_ref);
                                 let client = Client::new();                                            
                                 println!("{:?}", url.replace("\"", "").replace("172.30.1.11", "southdoor2.truecam.net"));                                
@@ -97,7 +99,7 @@ impl MetadataManager for Metadata {
                                         );
                                     }
                                 }
-                            }.clone());
+                            });
                         }
 
 
